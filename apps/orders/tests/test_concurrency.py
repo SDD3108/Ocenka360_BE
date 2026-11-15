@@ -1,12 +1,13 @@
 import io
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from tempfile import TemporaryDirectory
 from threading import Barrier
 from unittest import skipUnless
 
 from django.core.management import call_command
 from django.db import close_old_connections, connection
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -22,6 +23,11 @@ from .test_orders import valid_answers
 @skipUnless(connection.vendor == "postgresql", "Row locking tests require PostgreSQL")
 class OrderConcurrencyTests(TransactionTestCase):
     def setUp(self):
+        folder = TemporaryDirectory(prefix="o360-parallel-tests-")
+        self.addCleanup(folder.cleanup)
+        override = override_settings(MATERIAL_STORAGE_ROOT=folder.name)
+        override.enable()
+        self.addCleanup(override.disable)
         call_command("seed_legal_drafts", stdout=io.StringIO())
         call_command("seed_catalog", stdout=io.StringIO())
         self.owner = User.objects.create_user("parallel-order@example.com")
@@ -64,6 +70,9 @@ class OrderConcurrencyTests(TransactionTestCase):
 
     def test_double_submit_has_single_snapshot(self):
         order, _ = services.create_order(self.owner, self.data)
+        from apps.materials.tests.fixtures import seed_test_materials
+
+        seed_test_materials(order)
 
         def submit():
             try:
@@ -87,3 +96,57 @@ class OrderConcurrencyTests(TransactionTestCase):
         self.assertCountEqual(self.run_parallel(edit), ["ok", "conflict"])
         self.asset.refresh_from_db()
         self.assertEqual(self.asset.version, 2)
+
+    def test_identical_parallel_material_uploads_create_one_record(self):
+        from apps.materials.services import upload
+        from apps.materials.tests.fixtures import pdf_upload
+
+        order, _ = services.create_order(self.owner, self.data)
+        upload_id = uuid.uuid4()
+
+        def send():
+            return upload(
+                self.owner,
+                order.pk,
+                {
+                    "expected_version": 1,
+                    "client_upload_id": upload_id,
+                    "kind": "document",
+                    "slot_key": "additional",
+                    "file": pdf_upload(),
+                },
+            )[2]
+
+        self.assertCountEqual(self.run_parallel(send), [True, False])
+        self.assertEqual(order.materials.count(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.version, 2)
+        self.assertEqual(order.events.count(), 2)
+
+    def test_parallel_different_uploads_reject_stale_version(self):
+        from apps.materials.services import upload
+        from apps.materials.tests.fixtures import pdf_upload
+
+        order, _ = services.create_order(self.owner, self.data)
+
+        def send():
+            try:
+                upload(
+                    self.owner,
+                    order.pk,
+                    {
+                        "expected_version": 1,
+                        "client_upload_id": uuid.uuid4(),
+                        "kind": "document",
+                        "slot_key": "additional",
+                        "file": pdf_upload(),
+                    },
+                )
+                return "ok"
+            except services.Conflict:
+                return "conflict"
+
+        self.assertCountEqual(self.run_parallel(send), ["ok", "conflict"])
+        self.assertEqual(order.materials.count(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.version, 2)

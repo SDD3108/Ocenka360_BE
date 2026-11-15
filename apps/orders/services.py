@@ -202,7 +202,9 @@ def update_order(actor, order_id, data):
 
 
 def snapshot_submission(order):
-    OrderSubmission.objects.create(
+    from apps.materials.services import capture_manifest
+
+    submission = OrderSubmission.objects.create(
         order=order,
         version=order.version,
         form=order.form,
@@ -211,6 +213,8 @@ def snapshot_submission(order):
         asset_snapshot=deepcopy(order.asset_snapshot),
         service_snapshot=deepcopy(order.service_snapshot),
     )
+
+    capture_manifest(submission)
 
 
 @transaction.atomic
@@ -238,6 +242,9 @@ def submit_order(actor, order_id, expected_version, confirmed):
             raise Conflict("Review is not unlocked.", code="payment_required")
         order.status = Order.Status.SUBMITTED
     order.answers = validate_answers(order.form, order.answers, complete=True)
+    from apps.materials.services import require_materials
+
+    require_materials(order)
     order.confirmed_at = timezone.now()
     changed(order, actor, "confirmed" if before == Order.Status.DRAFT else "resubmitted", before)
     snapshot_submission(order)

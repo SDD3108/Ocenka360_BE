@@ -1,5 +1,6 @@
 import logging
 
+from django.core.exceptions import RequestDataTooBig, TooManyFilesSent
 from rest_framework.exceptions import NotAuthenticated, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
@@ -12,6 +13,10 @@ def error_payload(code, message, details=None):
 
 
 def api_exception_handler(exc, context):
+    if isinstance(exc, (RequestDataTooBig, TooManyFilesSent)):
+        return Response(
+            error_payload("upload_too_large", "Upload exceeds the allowed size or file count."), status=413
+        )
     response = exception_handler(exc, context)
     if response is None:
         # Never echo exception strings (they can contain SQL, credentials or documents).

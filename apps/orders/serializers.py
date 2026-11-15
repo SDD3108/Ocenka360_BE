@@ -161,6 +161,13 @@ class OrderEventSerializer(serializers.ModelSerializer):
 
 
 class OrderSubmissionSerializer(serializers.ModelSerializer):
+    materials_snapshot = serializers.SerializerMethodField()
+
+    def get_materials_snapshot(self, obj) -> dict | None:
+        # Part 4 records had no attachments: never invent a manifest for historical submissions.
+        manifest = getattr(obj, "material_manifest", None)
+        return manifest.snapshot if manifest else None
+
     class Meta:
         model = OrderSubmission
         fields = (
@@ -168,6 +175,7 @@ class OrderSubmissionSerializer(serializers.ModelSerializer):
             "version",
             "form_id",
             "form_checksum",
+            "materials_snapshot",
             "answers",
             "asset_snapshot",
             "service_snapshot",

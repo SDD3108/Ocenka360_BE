@@ -30,3 +30,5 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ImproperlyConfigured("Choose TLS or SSL, not both.")
 
 ALLOW_ORDER_SIMULATION = True
+
+ALLOW_UNSCANNED_UPLOADS = True

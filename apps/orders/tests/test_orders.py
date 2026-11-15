@@ -1,5 +1,6 @@
 import io
 import uuid
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from django.contrib.admin.sites import site
@@ -57,6 +58,11 @@ class OrderFixture(TestCase):
         return accept_documents(user, ids, True)
 
     def setUp(self):
+        folder = TemporaryDirectory(prefix="o360-tests-")
+        self.addCleanup(folder.cleanup)
+        override = override_settings(MATERIAL_STORAGE_ROOT=folder.name)
+        override.enable()
+        self.addCleanup(override.disable)
         cache.clear()
         self.api = APIClient()
         self.api.force_authenticate(self.owner)
@@ -78,6 +84,9 @@ class OrderFixture(TestCase):
         return response.json()
 
     def confirm(self, order):
+        from apps.materials.tests.fixtures import seed_test_materials
+
+        seed_test_materials(Order.objects.get(pk=order["id"]))
         return self.api.post(
             ROOT + f"orders/{order['id']}/submit/", {"expected_version": order["version"], "confirmed": True}
         )

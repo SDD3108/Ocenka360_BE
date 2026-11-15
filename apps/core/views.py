@@ -61,6 +61,7 @@ class PublicConfigView(PublicView):
                     "email_otp": True,
                     "catalog": True,
                     "orders": True,
+                    "materials": True,
                     "payments": False,
                     "ai": False,
                 },

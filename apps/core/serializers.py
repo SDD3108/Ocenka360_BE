@@ -23,6 +23,7 @@ class FeaturesSerializer(serializers.Serializer):
     email_otp = serializers.BooleanField()
     catalog = serializers.BooleanField()
     orders = serializers.BooleanField()
+    materials = serializers.BooleanField()
     payments = serializers.BooleanField()
     ai = serializers.BooleanField()
 
