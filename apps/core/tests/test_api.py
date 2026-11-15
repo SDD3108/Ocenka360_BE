@@ -48,11 +48,12 @@ class SystemApiTests(TestCase):
         self.assertTrue(data["features"]["orders"])
         self.assertTrue(data["features"]["materials"])
         self.assertTrue(data["features"]["pricing"])
+        self.assertTrue(data["features"]["scheduling"])
         self.assertFalse(
             any(
                 v
                 for k, v in data["features"].items()
-                if k not in {"email_otp", "catalog", "orders", "materials", "pricing"}
+                if k not in {"email_otp", "catalog", "orders", "materials", "pricing", "scheduling"}
             )
         )
         for forbidden in ("SECRET_KEY", "DATABASE_URL", "EMAIL_HOST_PASSWORD"):

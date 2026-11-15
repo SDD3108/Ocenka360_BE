@@ -25,6 +25,7 @@ class FeaturesSerializer(serializers.Serializer):
     orders = serializers.BooleanField()
     materials = serializers.BooleanField()
     pricing = serializers.BooleanField()
+    scheduling = serializers.BooleanField()
     payments = serializers.BooleanField()
     ai = serializers.BooleanField()
 

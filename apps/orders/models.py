@@ -52,6 +52,9 @@ class Order(models.Model):
         NEEDS_INFORMATION = "needs_information", "Нужны уточнения"
         ACCEPTED = "accepted", "Принята для согласования условий"
         PRICE_AGREED = "price_agreed", "Цена согласована клиентом"
+        INSPECTION_SCHEDULED = "inspection_scheduled", "Осмотр согласован"
+        IN_PROGRESS = "in_progress", "Работа начата"
+        AWAITING_REPORT = "awaiting_report", "Готовится отчёт"
         REJECTED = "rejected", "Отказ компании"
         CANCELLED = "cancelled", "Отменена клиентом"
 

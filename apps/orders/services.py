@@ -270,6 +270,7 @@ def cancel_order(actor, order_id, expected_version, reason=""):
         Order.Status.NEEDS_INFORMATION,
         Order.Status.ACCEPTED,
         Order.Status.PRICE_AGREED,
+        Order.Status.INSPECTION_SCHEDULED,
     }
     if order.status not in cancellable:
         raise Conflict("Cancellation is not available in this status.", code="invalid_transition")
@@ -277,7 +278,9 @@ def cancel_order(actor, order_id, expected_version, reason=""):
     order.status = Order.Status.CANCELLED
     order = changed(order, actor, "cancelled", before, reason)
     from apps.pricing.services import close_order_pricing
+    from apps.scheduling.services import close_order_schedule
 
+    close_order_schedule(order, actor)
     close_order_pricing(order, actor)
     return order
 
@@ -306,6 +309,7 @@ def review_action(actor, order_id, expected_version, action, message=""):
                 Order.Status.NEEDS_INFORMATION,
                 Order.Status.ACCEPTED,
                 Order.Status.PRICE_AGREED,
+                Order.Status.INSPECTION_SCHEDULED,
             },
             Order.Status.REJECTED,
         ),
@@ -320,7 +324,9 @@ def review_action(actor, order_id, expected_version, action, message=""):
     order = changed(order, actor, action, before, message)
     if action == "reject":
         from apps.pricing.services import close_order_pricing
+        from apps.scheduling.services import close_order_schedule
 
+        close_order_schedule(order, actor)
         close_order_pricing(order, actor)
     return order
 

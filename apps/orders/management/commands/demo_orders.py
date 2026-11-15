@@ -5,6 +5,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -25,10 +26,18 @@ from apps.materials.services import checklist, upload
 from apps.orders import services
 from apps.pricing import services as pricing
 from apps.pricing.calculator import estimate
+from apps.scheduling import services as scheduling
 
 
 class Command(BaseCommand):
-    help = "LOCAL ONLY: demonstrate Parts 4–6 materials, prices and transitions and roll back every change. No real payments."
+    help = "LOCAL ONLY: demonstrate Parts 4–7 materials, prices, calendar and transitions and roll back every change. No real payments."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--inspection",
+            action="store_true",
+            help="Also simulate the clock for an inspection and its report deadline; all changes roll back.",
+        )
 
     def handle(self, *args, **options):
         if not settings.ALLOW_ORDER_SIMULATION:
@@ -144,7 +153,51 @@ class Command(BaseCommand):
             )
             self.show(order)
             self.stdout.write(f"DEMO ONLY agreed: {quote.total} KZT; no payment was made.")
-            order = services.cancel_order(owner, order.pk, order.version, "TEST: отмена до начала работ")
+            start = timezone.now() + timedelta(days=1)
+            appointment, order, _ = scheduling.propose(
+                owner,
+                order.pk,
+                {
+                    "expected_version": order.version,
+                    "client_request_id": uuid.uuid4(),
+                    "starts_at": start,
+                    "ends_at": start + timedelta(hours=1),
+                    "mode": "onsite",
+                    "note": "TEST ONLY",
+                },
+            )
+            appointment, order = scheduling.confirm_request(
+                reviewer,
+                order.pk,
+                appointment.pk,
+                {
+                    "expected_version": order.version,
+                    "starts_at": start,
+                    "ends_at": start + timedelta(hours=1),
+                    "report_hours": 24,
+                    "buffer_before_minutes": 0,
+                    "buffer_after_minutes": 30,
+                },
+            )
+            self.show(order)
+            if options["inspection"]:
+                with patch(
+                    "apps.scheduling.services.timezone.now", return_value=start + timedelta(minutes=5)
+                ):
+                    appointment, order = scheduling.start_inspection(
+                        reviewer, order.pk, appointment.pk, order.version
+                    )
+                self.show(order)
+                due = order.inspection.report_due_at
+                with patch(
+                    "apps.scheduling.services.timezone.now", return_value=start + timedelta(minutes=35)
+                ):
+                    appointment, order = scheduling.finish_inspection(
+                        reviewer, order.pk, appointment.pk, order.version, "TEST ONLY completed"
+                    )
+                self.stdout.write(f"DEMO ONLY report due: {due.isoformat()} (from actual simulated start)")
+            else:
+                order = services.cancel_order(owner, order.pk, order.version, "TEST: отмена до начала работ")
             self.show(order)
             self.stdout.write(f"Snapshots: {order.submissions.count()}, events: {order.events.count()}")
             transaction.set_rollback(True)

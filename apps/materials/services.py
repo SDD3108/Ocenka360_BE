@@ -40,7 +40,12 @@ def available(order):
 
 
 def checklist(order, language=None):
-    result = requirements(order, language or order.language)
+    from copy import copy
+
+    effective = copy(order)
+    if order.appointments.filter(state__in=["confirmed", "in_progress"], mode="remote").exists():
+        effective.answers = {**order.answers, "inspection_preference": "remote"}
+    result = requirements(effective, language or order.language)
     storage = PrivateStorage()
     present = {
         (m.kind, m.slot_key)
@@ -99,7 +104,17 @@ def capture_manifest(submission):
 
 
 def editable(order, review):
-    allowed = {Order.Status.UNDER_REVIEW} if review else {Order.Status.DRAFT, Order.Status.NEEDS_INFORMATION}
+    allowed = (
+        {Order.Status.UNDER_REVIEW, Order.Status.INSPECTION_SCHEDULED, Order.Status.IN_PROGRESS}
+        if review
+        else {Order.Status.DRAFT, Order.Status.NEEDS_INFORMATION}
+    )
+    if (
+        not review
+        and order.status == Order.Status.INSPECTION_SCHEDULED
+        and order.appointments.filter(state="confirmed", mode="remote").exists()
+    ):
+        allowed.add(Order.Status.INSPECTION_SCHEDULED)
     if order.status not in allowed:
         raise orders.Conflict("Files cannot be changed in this status.", code="invalid_transition")
 
@@ -201,7 +216,7 @@ def withdraw(actor, order_id, material_id, expected_version, review=False):
     material = get_object_or_404(
         order.materials, pk=material_id, uploaded_by=actor, withdrawn_at__isnull=True
     )
-    if material.submission_links.exists():
+    if material.submission_links.exists() or material.inspection_links.exists():
         raise orders.Conflict(
             "A confirmed file is part of the order history and cannot be removed here.",
             code="material_pinned",
