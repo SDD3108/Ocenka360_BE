@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: Оценка 360 API
-  version: 0.2.0
-  description: 'Part 2: email OTP, revocable JWT sessions, profile and versioned consents.
-    Business modules and payments are not implemented yet.'
+  version: 0.3.0
+  description: 'Part 3: service catalog, versioned questionnaires and document requirements.
+    Orders, uploads and payments are not implemented yet.'
 paths:
   /api/v1/:
     get:
@@ -220,6 +220,202 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/catalog/categories/:
+    get:
+      operationId: v1_catalog_categories_list
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      tags:
+      - Catalog
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /api/v1/catalog/services/:
+    get:
+      operationId: v1_catalog_services_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 100
+      tags:
+      - Catalog
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceList'
+          description: ''
+  /api/v1/catalog/services/{slug}/:
+    get:
+      operationId: v1_catalog_services_retrieve
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Catalog
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+  /api/v1/catalog/services/{slug}/form/:
+    get:
+      operationId: v1_catalog_services_form_retrieve
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Catalog
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+          description: ''
+  /api/v1/catalog/services/{slug}/validate/:
+    post:
+      operationId: v1_catalog_services_validate_create
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateAnswersRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/config/:
     get:
       operationId: v1_config_retrieve
@@ -415,6 +611,28 @@ components:
       - expires_at
       - id
       - last_used_at
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          readOnly: true
+        service_count:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - service_count
+      - slug
+      - title
     CodeRequested:
       type: object
       properties:
@@ -453,6 +671,16 @@ components:
       - legal_name
       - name
       - phone
+    Condition:
+      type: object
+      properties:
+        field:
+          type: string
+        equals:
+          description: Exact choice string or boolean; no expressions.
+      required:
+      - equals
+      - field
     ConsentRequest:
       type: object
       properties:
@@ -536,6 +764,24 @@ components:
       - phone_verified
       - requires_consent
       - role
+    DocumentRequirement:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        help:
+          type: string
+        required:
+          type: boolean
+        when:
+          $ref: '#/components/schemas/Condition'
+      required:
+      - help
+      - key
+      - required
+      - title
     Error:
       type: object
       properties:
@@ -562,6 +808,8 @@ components:
       properties:
         email_otp:
           type: boolean
+        catalog:
+          type: boolean
         orders:
           type: boolean
         payments:
@@ -570,9 +818,73 @@ components:
           type: boolean
       required:
       - ai
+      - catalog
       - email_otp
       - orders
       - payments
+    Form:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+        checksum:
+          type: string
+        service:
+          type: string
+        language:
+          type: string
+        notice:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormField'
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRequirement'
+      required:
+      - checksum
+      - documents
+      - fields
+      - id
+      - language
+      - notice
+      - service
+      - version
+    FormField:
+      type: object
+      properties:
+        key:
+          type: string
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        label:
+          type: string
+        required:
+          type: boolean
+        help:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+        min:
+          description: Integer or exact decimal string.
+        max:
+          description: Integer or exact decimal string.
+        max_length:
+          type: integer
+        visible_if:
+          $ref: '#/components/schemas/Condition'
+      required:
+      - key
+      - label
+      - required
+      - type
     Health:
       type: object
       properties:
@@ -639,6 +951,39 @@ components:
       - language
       - title
       - version
+    Option:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+      required:
+      - label
+      - value
+    PaginatedServiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
     PatchedCurrentUserRequest:
       type: object
       properties:
@@ -719,6 +1064,41 @@ components:
         * `client` - Клиент
         * `appraiser` - Оценщик
         * `admin` - Администратор
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+        category:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        form_id:
+          type: string
+          format: uuid
+          readOnly: true
+        form_version:
+          type: integer
+          readOnly: true
+      required:
+      - category
+      - form_id
+      - form_version
+      - id
+      - slug
+      - summary
+      - title
     StatusEnum:
       enum:
       - ok
@@ -751,6 +1131,85 @@ components:
       - session_expires_at
       - session_id
       - token_type
+    TypeEnum:
+      enum:
+      - text
+      - textarea
+      - integer
+      - decimal
+      - date
+      - choice
+      - boolean
+      type: string
+      description: |-
+        * `text` - text
+        * `textarea` - textarea
+        * `integer` - integer
+        * `decimal` - decimal
+        * `date` - date
+        * `choice` - choice
+        * `boolean` - boolean
+    ValidateAnswersLanguageEnum:
+      enum:
+      - ru
+      - kk
+      - en
+      type: string
+      description: |-
+        * `ru` - ru
+        * `kk` - kk
+        * `en` - en
+    ValidateAnswersRequest:
+      type: object
+      properties:
+        form_id:
+          type: string
+          format: uuid
+        language:
+          allOf:
+          - $ref: '#/components/schemas/ValidateAnswersLanguageEnum'
+          default: ru
+        answers:
+          description: Object keyed by field key. Decimal values are strings; integers/booleans
+            are JSON numbers/booleans.
+      required:
+      - answers
+      - form_id
+    ValidationResult:
+      type: object
+      properties:
+        form_id:
+          type: string
+          format: uuid
+        form_version:
+          type: integer
+        valid:
+          type: boolean
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+        visible_fields:
+          type: array
+          items:
+            type: string
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRequirement'
+        notice:
+          type: string
+        submission_created:
+          type: boolean
+      required:
+      - documents
+      - errors
+      - form_id
+      - form_version
+      - notice
+      - submission_created
+      - valid
+      - visible_fields
     VerifyCodeRequest:
       type: object
       properties:

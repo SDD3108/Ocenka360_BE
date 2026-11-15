@@ -1,4 +1,4 @@
-# Архитектура Part 2
+# Архитектура Part 3
 
 Проект — модульный Django-монолит. Отдельные микросервисы для этой стадии не требуются.
 
@@ -9,6 +9,7 @@
 | `config/settings/test.py` | Изолированная тестовая БД и тестовый хешер |
 | `config/settings/production.py` | PostgreSQL, HTTPS, строгие параметры запуска |
 | `apps/accounts/` | Пользователи, роли, admin, OTP, квоты, JWT-сессии, профиль |
+| `apps/catalog/` | Категории, услуги, версии анкет, условия и проверка ответов |
 | `apps/legal/` | Версии документов и история согласий |
 | `apps/core/` | Системные API, конфигурация, ошибки, request ID |
 | `docs/openapi.yaml` | Машиночитаемый API текущего Part |
@@ -53,3 +54,8 @@ Production-схема и Swagger доступны staff; local — публич�
 ## Миграции Part 2
 
 accounts/0001 сохранена. accounts/0002 добавляет поля подтверждения возраста и token_version, EmailChallenge, AuthSession, AuthRateBucket, EmailCooldown. legal/0001 добавляет LegalDocument и ConsentAcceptance. Структура существующих UUID, ролей, email и паролей не заменяется. JWT-rotation и принятие согласий транзакционны; квоты и consumption OTP используют условные атомарные UPDATE. PostgreSQL — целевая БД для конкурентной нагрузки.
+
+
+## Миграция Part 3
+
+catalog/0001_initial добавляет Category, Service и FormRevision, не изменяя accounts/legal. Начальные услуги загружаются явной идемпотентной командой seed_catalog, а не data migration. Опубликованная анкета неизменяема; новая версия и смена current_form готовят основу для сохранения заявок в Part 4. Предварительная проверка ответов сейчас не пишет персональные данные в БД. Подробности — CATALOG.md.

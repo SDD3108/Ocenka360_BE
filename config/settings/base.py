@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.legal",
+    "apps.catalog",
 ]
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
@@ -128,9 +129,9 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
-    "DESCRIPTION": "Part 2: email OTP, revocable JWT sessions, profile and versioned consents. "
-    "Business modules and payments are not implemented yet.",
-    "VERSION": "0.2.0",
+    "DESCRIPTION": "Part 3: service catalog, versioned questionnaires and document requirements. "
+    "Orders, uploads and payments are not implemented yet.",
+    "VERSION": "0.3.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -143,7 +144,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.

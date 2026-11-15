@@ -1,4 +1,4 @@
-# API Part 2
+# API Part 3
 
 База: `/api/v1/`. JSON, snake_case, завершающий `/`. Полная схема — `openapi.yaml`, Swagger — `/api/docs/`. Время ISO 8601 с timezone, идентификаторы UUID.
 
@@ -55,3 +55,8 @@ POST refresh: `{"refresh":"CURRENT_REFRESH_TOKEN"}` без Authorization. **За
 Основные статусы: 400 поля/код/устаревшие документы; 401 отсутствует или недействителен Bearer; 403 запрет доступа; 404 чужая/несуществующая сессия; 429 лимит (заголовок `Retry-After`); 503 SMTP либо документы не готовы. `legal_not_ready` требует подготовки документов; повторный запрос кода проблему не исправит. Сообщения ошибок технические английские; UI переводит `error.code` через i18n, не сравнивает полный текст.
 
 API помечен `Cache-Control: no-store`; запрос получает серверный `X-Request-ID`. CSRF сохраняется для Django-session запросов; Bearer не зависит от cookies. Anonymous `/accounts/me/` теперь 401 (в Part 1 был 403). Django session допускается для профиля/согласий; управление устройствами требует JWT.
+
+
+## Каталог (добавлено в Part 3)
+
+Префикс `/api/v1/catalog/`: GET categories/, GET services/, GET services/{slug}/, GET services/{slug}/form/, POST services/{slug}/validate/. Полный контракт, примеры и условия — CATALOG.md. GET публичные, validate требует вход, подтверждённый email и актуальные согласия. Публичный config теперь содержит features.catalog=true; orders/payments/ai всё ещё false. Валидация анкеты не создаёт заявку, не сохраняет ответы и не загружает документы.

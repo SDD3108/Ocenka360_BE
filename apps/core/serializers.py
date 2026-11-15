@@ -21,6 +21,7 @@ class CompanySerializer(serializers.Serializer):
 
 class FeaturesSerializer(serializers.Serializer):
     email_otp = serializers.BooleanField()
+    catalog = serializers.BooleanField()
     orders = serializers.BooleanField()
     payments = serializers.BooleanField()
     ai = serializers.BooleanField()

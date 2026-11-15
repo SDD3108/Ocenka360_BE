@@ -1,0 +1,387 @@
+{
+  "fields": [
+    {
+      "key": "applicant_type",
+      "type": "choice",
+      "label": {
+        "ru": "Кто заказывает оценку?",
+        "kk": "Бағалауға кім тапсырыс береді?",
+        "en": "Applicant type"
+      },
+      "required": true,
+      "options": [
+        {
+          "value": "individual",
+          "label": {
+            "ru": "Физическое лицо",
+            "kk": "Жеке тұлға",
+            "en": "Individual"
+          }
+        },
+        {
+          "value": "company",
+          "label": {
+            "ru": "Организация",
+            "kk": "Ұйым",
+            "en": "Company"
+          }
+        }
+      ]
+    },
+    {
+      "key": "company_name",
+      "type": "text",
+      "label": {
+        "ru": "Название организации",
+        "kk": "Ұйым атауы",
+        "en": "Company name"
+      },
+      "required": true,
+      "max_length": 200,
+      "visible_if": {
+        "field": "applicant_type",
+        "equals": "company"
+      }
+    },
+    {
+      "key": "applicant_role",
+      "type": "choice",
+      "label": {
+        "ru": "Ваше отношение к объекту",
+        "kk": "Нысанға қатысыңыз",
+        "en": "Your role"
+      },
+      "required": true,
+      "options": [
+        {
+          "value": "owner",
+          "label": {
+            "ru": "Собственник",
+            "kk": "Меншік иесі",
+            "en": "Owner"
+          }
+        },
+        {
+          "value": "representative",
+          "label": {
+            "ru": "Представитель",
+            "kk": "Өкіл",
+            "en": "Representative"
+          }
+        },
+        {
+          "value": "other",
+          "label": {
+            "ru": "Другое основание",
+            "kk": "Басқа негіз",
+            "en": "Other capacity"
+          }
+        }
+      ]
+    },
+    {
+      "key": "purpose",
+      "type": "choice",
+      "label": {
+        "ru": "Цель оценки",
+        "kk": "Бағалау мақсаты",
+        "en": "Purpose"
+      },
+      "required": true,
+      "options": [
+        {
+          "value": "sale",
+          "label": {
+            "ru": "Сделка",
+            "kk": "Мәміле",
+            "en": "Transaction"
+          }
+        },
+        {
+          "value": "mortgage",
+          "label": {
+            "ru": "Залог / ипотека",
+            "kk": "Кепіл / ипотека",
+            "en": "Collateral / mortgage"
+          }
+        },
+        {
+          "value": "court",
+          "label": {
+            "ru": "Суд / спор",
+            "kk": "Сот / дау",
+            "en": "Court / dispute"
+          }
+        },
+        {
+          "value": "inheritance",
+          "label": {
+            "ru": "Наследство / дарение",
+            "kk": "Мұра / сыйға тарту",
+            "en": "Inheritance / gift"
+          }
+        },
+        {
+          "value": "insurance",
+          "label": {
+            "ru": "Страхование / возмещение",
+            "kk": "Сақтандыру / өтемақы",
+            "en": "Insurance / compensation"
+          }
+        },
+        {
+          "value": "accounting",
+          "label": {
+            "ru": "Бухучёт",
+            "kk": "Бухгалтерлік есеп",
+            "en": "Accounting"
+          }
+        },
+        {
+          "value": "other",
+          "label": {
+            "ru": "Другая цель",
+            "kk": "Басқа мақсат",
+            "en": "Other purpose"
+          }
+        }
+      ]
+    },
+    {
+      "key": "purpose_details",
+      "type": "textarea",
+      "label": {
+        "ru": "Уточните цель",
+        "kk": "Мақсатты нақтылаңыз",
+        "en": "Describe the purpose"
+      },
+      "required": true,
+      "max_length": 1000,
+      "visible_if": {
+        "field": "purpose",
+        "equals": "other"
+      }
+    },
+    {
+      "key": "city",
+      "type": "text",
+      "label": {
+        "ru": "Город нахождения объекта",
+        "kk": "Нысан орналасқан қала",
+        "en": "Asset location city"
+      },
+      "required": true,
+      "max_length": 100
+    },
+    {
+      "key": "address",
+      "type": "text",
+      "label": {
+        "ru": "Адрес объекта",
+        "kk": "Нысан мекенжайы",
+        "en": "Property address"
+      },
+      "required": true,
+      "max_length": 300
+    },
+    {
+      "key": "area_sqm",
+      "type": "decimal",
+      "label": {
+        "ru": "Площадь, м²",
+        "kk": "Ауданы, м²",
+        "en": "Area, m²"
+      },
+      "required": true,
+      "min": "0.0001",
+      "max": 100000000,
+      "help": {
+        "ru": "Укажите положительную площадь по документам (например, 65.5).",
+        "kk": "Құжаттағы ауданды көрсетіңіз (мысалы, 65.5).",
+        "en": "Enter the area from documents, e.g. 65.5."
+      }
+    },
+    {
+      "key": "rooms",
+      "type": "integer",
+      "label": {
+        "ru": "Количество комнат",
+        "kk": "Бөлмелер саны",
+        "en": "Number of rooms"
+      },
+      "required": false,
+      "min": 1,
+      "max": 100
+    },
+    {
+      "key": "inspection_preference",
+      "type": "choice",
+      "label": {
+        "ru": "Предпочтительный осмотр",
+        "kk": "Қалаған тексеру тәсілі",
+        "en": "Inspection preference"
+      },
+      "required": true,
+      "options": [
+        {
+          "value": "onsite",
+          "label": {
+            "ru": "Выезд оценщика",
+            "kk": "Бағалаушының келуі",
+            "en": "On-site visit"
+          }
+        },
+        {
+          "value": "remote",
+          "label": {
+            "ru": "Фото клиента — после согласования",
+            "kk": "Клиент фотосуреттері — келісімнен кейін",
+            "en": "Customer photos, subject to approval"
+          }
+        }
+      ]
+    },
+    {
+      "key": "urgency",
+      "type": "choice",
+      "label": {
+        "ru": "Срочность",
+        "kk": "Шұғылдық",
+        "en": "Urgency"
+      },
+      "required": true,
+      "options": [
+        {
+          "value": "regular",
+          "label": {
+            "ru": "Обычный порядок",
+            "kk": "Қалыпты тәртіп",
+            "en": "Regular"
+          }
+        },
+        {
+          "value": "urgent",
+          "label": {
+            "ru": "Срочно — согласовать возможность",
+            "kk": "Шұғыл — мүмкіндігін келісу",
+            "en": "Urgent, subject to availability"
+          }
+        }
+      ]
+    },
+    {
+      "key": "comment",
+      "type": "textarea",
+      "label": {
+        "ru": "Комментарий",
+        "kk": "Пікір",
+        "en": "Comment"
+      },
+      "required": false,
+      "max_length": 2000
+    }
+  ],
+  "documents": [
+    {
+      "key": "owner_id",
+      "title": {
+        "ru": "Удостоверения собственников",
+        "kk": "Меншік иелерінің жеке куәліктері",
+        "en": "Owners' identity documents"
+      },
+      "required": true,
+      "help": {
+        "ru": "Перечень лиц и основание передачи их данных уточняет оценщик. Сейчас файлы не загружаются.",
+        "kk": "Тұлғалар тізімін және олардың деректерін беру негізін бағалаушы нақтылайды. Қазір файлдар жүктелмейді.",
+        "en": "The appraiser confirms whose documents are needed and the basis for sharing their data. No files are uploaded at this stage."
+      },
+      "when": {
+        "field": "applicant_type",
+        "equals": "individual"
+      }
+    },
+    {
+      "key": "company_registration",
+      "title": {
+        "ru": "Документ о регистрации организации",
+        "kk": "Ұйымның тіркелу құжаты",
+        "en": "Company registration document"
+      },
+      "required": true,
+      "help": {
+        "ru": "Подготовьте документ для проверки оценщиком; дополнительные требования уточняются по заявке.",
+        "kk": "Құжатты бағалаушының тексеруіне дайындаңыз; қосымша талаптар өтінім бойынша нақтыланады.",
+        "en": "Prepare this document for the appraiser's review; additional requirements depend on the case."
+      },
+      "when": {
+        "field": "applicant_type",
+        "equals": "company"
+      }
+    },
+    {
+      "key": "authority",
+      "title": {
+        "ru": "Подтверждение полномочий представителя",
+        "kk": "Өкіл өкілеттігін растау",
+        "en": "Representative authority document"
+      },
+      "required": true,
+      "help": {
+        "ru": "Подготовьте документ для проверки оценщиком; дополнительные требования уточняются по заявке.",
+        "kk": "Құжатты бағалаушының тексеруіне дайындаңыз; қосымша талаптар өтінім бойынша нақтыланады.",
+        "en": "Prepare this document for the appraiser's review; additional requirements depend on the case."
+      },
+      "when": {
+        "field": "applicant_role",
+        "equals": "representative"
+      }
+    },
+    {
+      "key": "ownership_basis",
+      "title": {
+        "ru": "Основание права собственности",
+        "kk": "Меншік құқығының негізі",
+        "en": "Ownership basis document"
+      },
+      "required": true,
+      "help": {
+        "ru": "Подготовьте документ для проверки оценщиком; дополнительные требования уточняются по заявке.",
+        "kk": "Құжатты бағалаушының тексеруіне дайындаңыз; қосымша талаптар өтінім бойынша нақтыланады.",
+        "en": "Prepare this document for the appraiser's review; additional requirements depend on the case."
+      }
+    },
+    {
+      "key": "encumbrance_f2",
+      "title": {
+        "ru": "Сведения об обременениях (Ф2)",
+        "kk": "Ауыртпалықтар туралы мәліметтер (Ф2)",
+        "en": "Encumbrance information (F2)"
+      },
+      "required": true,
+      "help": {
+        "ru": "Подготовьте документ для проверки оценщиком; дополнительные требования уточняются по заявке.",
+        "kk": "Құжатты бағалаушының тексеруіне дайындаңыз; қосымша талаптар өтінім бойынша нақтыланады.",
+        "en": "Prepare this document for the appraiser's review; additional requirements depend on the case."
+      }
+    },
+    {
+      "key": "technical_passport",
+      "title": {
+        "ru": "Технический паспорт",
+        "kk": "Техникалық паспорт",
+        "en": "Technical passport"
+      },
+      "required": true,
+      "help": {
+        "ru": "Подготовьте документ для проверки оценщиком; дополнительные требования уточняются по заявке.",
+        "kk": "Құжатты бағалаушының тексеруіне дайындаңыз; қосымша талаптар өтінім бойынша нақтыланады.",
+        "en": "Prepare this document for the appraiser's review; additional requirements depend on the case."
+      }
+    }
+  ],
+  "notice": {
+    "ru": "Это предварительная анкета. Перечень документов и возможность удалённого осмотра подтверждает оценщик. Итоговую стоимость услуги утверждает оценщик. Проверка анкеты не создаёт заявку и не подтверждает оплату.",
+    "kk": "Бұл алдын ала сауалнама. Құжаттар тізімін және қашықтан тексеру мүмкіндігін бағалаушы растайды. Қызметтің түпкілікті бағасын бағалаушы бекітеді. Сауалнаманы тексеру өтінім жасамайды және төлемді растамайды.",
+    "en": "This is a preliminary questionnaire. The appraiser confirms the document list, remote inspection availability and final service fee. Validating this form does not create an order or confirm payment."
+  }
+}
