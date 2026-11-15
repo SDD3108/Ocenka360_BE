@@ -36,6 +36,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--reports",
+            action="store_true",
+            help="Also demonstrate report publication and original handover; requires --inspection.",
+        )
+        parser.add_argument(
             "--communications",
             action="store_true",
             help="Exercise comments, material requests and the notification inbox.",
@@ -52,6 +57,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if options["reports"] and not options["inspection"]:
+            raise CommandError("--reports requires --inspection")
         if not settings.ALLOW_ORDER_SIMULATION:
             raise CommandError("Demo is disabled outside local/test.")
         with (
@@ -287,6 +294,61 @@ class Command(BaseCommand):
                     payments.simulate_refund(refund.pk)
                 order.refresh_from_db()
                 self.stdout.write(f"TEST ONLY refunded: {payments.balance(order)['refunded']}")
+            if options["reports"]:
+                from apps.notifications.models import Notification
+                from apps.operations import services as operations
+                from apps.reports import services as reports
+
+                report, order, _ = reports.upload(
+                    reviewer,
+                    order.pk,
+                    {
+                        "expected_version": order.version,
+                        "client_upload_id": uuid.uuid4(),
+                        "report_number": "DEMO-ONLY",
+                        "title": "TEST PDF — not an appraisal",
+                        "issue_date": timezone.localdate(),
+                        "note": "Synthetic blank page",
+                        "file": SimpleUploadedFile(
+                            "demo.pdf", stream.getvalue(), content_type="application/pdf"
+                        ),
+                    },
+                )
+                report, order = reports.publish(reviewer, order.pk, report.pk, order.version, True)
+                _, downloaded = reports.open_report(owner, order.pk, report.pk)
+                with downloaded:
+                    if downloaded.read() != stream.getvalue():
+                        raise CommandError("Report bytes changed")
+                task, _ = operations.create_task(
+                    reviewer,
+                    {
+                        "order_id": order.pk,
+                        "client_request_id": uuid.uuid4(),
+                        "title": "TEST prepare original",
+                        "note": "",
+                        "due_at": timezone.now() - timedelta(hours=1),
+                    },
+                )
+                operations.notify_overdue()
+                order.refresh_from_db()
+                _, order = reports.original_action(
+                    reviewer, order.pk, report.pk, order.version, "ready", True
+                )
+                original, order = reports.original_action(
+                    reviewer, order.pk, report.pk, order.version, "handover", True, "pickup", "TEST only"
+                )
+                operations.update_task(reviewer, task.pk, {"expected_version": task.version, "state": "done"})
+                metrics = operations.summary(timezone.localdate(), timezone.localdate(), include_test=True)
+                if (
+                    order.status != "completed"
+                    or original.state != "handed_over"
+                    or not Notification.objects.filter(recipient=owner, kind="report_published").exists()
+                    or metrics["completed_orders"] < 1
+                ):
+                    raise CommandError("Report demonstration failed")
+                self.stdout.write(
+                    "PASS: private PDF, explicit publication, original handover, reviewer task/reminder and metrics"
+                )
             self.stdout.write(f"Snapshots: {order.submissions.count()}, events: {order.events.count()}")
             transaction.set_rollback(True)
         self.stdout.write(self.style.SUCCESS("PASS. All demo data rolled back. No email or money sent."))

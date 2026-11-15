@@ -158,7 +158,14 @@ class OrderHistoryView(ListAPIView):
     def get_queryset(self):
         orders = services.review_queryset() if self.review else Order.objects.filter(owner=self.request.user)
         order = get_object_or_404(orders, pk=self.kwargs["order_id"])
-        return order.submissions.all() if self.submissions else order.events.all()
+        if self.submissions:
+            return order.submissions.all()
+        query = order.events.all()
+        if not self.review:
+            query = query.exclude(
+                action__in=["report_uploaded", "report_draft_discarded", "report_overdue", "review_task_due"]
+            )
+        return query
 
     @extend_schema(tags=["Orders"])
     def get(self, request, *args, **kwargs):

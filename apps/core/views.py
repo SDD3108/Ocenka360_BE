@@ -73,6 +73,8 @@ class PublicConfigView(PublicView):
                     "push": bool(
                         settings.EXPO_PUSH_ENABLED and settings.EXPO_PROJECT_ID and settings.EXPO_ACCESS_TOKEN
                     ),
+                    "reports": True,
+                    "reviewer_operations": True,
                     "ai": False,
                 },
             }

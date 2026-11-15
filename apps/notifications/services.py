@@ -9,7 +9,7 @@ from apps.accounts.models import AuthSession, User
 from apps.accounts.security import reserve_quota
 from apps.orders import services as orders
 
-from .messages import ACTIONS
+from .messages import ACTIONS, REVIEW_ONLY
 from .models import DeviceLock, Notification, PushDelivery, PushDevice
 
 REVIEW_ROLES = {User.Role.APPRAISER, User.Role.ADMIN}
@@ -31,11 +31,11 @@ def notify_event(event):
     order = event.order
     if event.action not in ACTIONS or not order.review_unlocked_at:
         return
-    recipients = {order.owner_id: "client"}
+    recipients = {} if event.action in REVIEW_ONLY else {order.owner_id: "client"}
     for user_id in User.objects.filter(
         is_active=True, email_verified_at__isnull=False, role__in=REVIEW_ROLES
     ).values_list("id", flat=True):
-        if user_id != order.owner_id:
+        if user_id != order.owner_id or event.action in REVIEW_ONLY:
             recipients[user_id] = "review"
     for user_id, audience in recipients.items():
         if user_id == event.actor_id:

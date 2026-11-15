@@ -54,6 +54,7 @@ class AnswersMixin:
 
 
 class OrderCreateSerializer(AnswersMixin, StrictSerializer):
+    acquisition_source = serializers.ChoiceField(choices=Order.Source.choices, required=False)
     client_request_id = serializers.UUIDField(
         help_text="Generate once per new draft; reuse only for identical retries."
     )
@@ -69,6 +70,7 @@ class VersionSerializer(StrictSerializer):
 
 
 class OrderPatchSerializer(AnswersMixin, VersionSerializer):
+    acquisition_source = serializers.ChoiceField(choices=Order.Source.choices, required=False)
     answers = serializers.JSONField(required=False)
     form_id = serializers.UUIDField(required=False)
 
@@ -107,6 +109,8 @@ class OrderSummarySerializer(serializers.ModelSerializer):
             "status",
             "version",
             "payment_status",
+            "acquisition_source",
+            "completed_at",
             "is_test",
             "confirmed_at",
             "created_at",

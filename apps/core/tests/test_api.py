@@ -49,6 +49,8 @@ class SystemApiTests(TestCase):
         self.assertTrue(data["features"]["materials"])
         self.assertTrue(data["features"]["pricing"])
         self.assertTrue(data["features"]["scheduling"])
+        self.assertTrue(data["features"]["reports"])
+        self.assertTrue(data["features"]["reviewer_operations"])
         self.assertTrue(data["features"]["communications"])
         self.assertTrue(data["features"]["notification_inbox"])
         self.assertFalse(
@@ -63,6 +65,8 @@ class SystemApiTests(TestCase):
                     "materials",
                     "pricing",
                     "scheduling",
+                    "reports",
+                    "reviewer_operations",
                     "communications",
                     "notification_inbox",
                 }

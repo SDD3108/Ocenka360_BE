@@ -157,7 +157,14 @@ def create_order(actor, data):
         return existing, False
     if (
         Order.objects.filter(owner=actor)
-        .exclude(status__in=[Order.Status.CANCELLED, Order.Status.REJECTED, Order.Status.SERVICE_STOPPED])
+        .exclude(
+            status__in=[
+                Order.Status.CANCELLED,
+                Order.Status.REJECTED,
+                Order.Status.SERVICE_STOPPED,
+                Order.Status.COMPLETED,
+            ]
+        )
         .count()
         >= settings.MAX_OPEN_ORDERS
     ):
@@ -174,6 +181,7 @@ def create_order(actor, data):
         service=service,
         form=form,
         language=data["language"],
+        acquisition_source=data.get("acquisition_source", "unknown"),
         answers=answers,
         asset_snapshot=asset_snapshot(asset),
         service_snapshot=service_snapshot(service),
@@ -197,6 +205,10 @@ def update_order(actor, order_id, data):
     if order.status not in {Order.Status.DRAFT, Order.Status.NEEDS_INFORMATION}:
         raise Conflict("Answers cannot be changed in this status.", code="invalid_transition")
     before = order.status
+    if "acquisition_source" in data:
+        if order.status != Order.Status.DRAFT:
+            raise Conflict("The acquisition source is fixed after first submission.")
+        order.acquisition_source = data["acquisition_source"]
     if "form_id" in data:
         if order.status != Order.Status.DRAFT:
             raise Conflict("A submitted order keeps its original form.", code="form_pinned")

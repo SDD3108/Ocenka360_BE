@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.materials.models import Material
 from apps.materials.storage import PrivateStorage
+from apps.reports.models import Report
 
 
 class Command(BaseCommand):
@@ -24,6 +25,7 @@ class Command(BaseCommand):
         storage = PrivateStorage()
         root = Path(storage.location)
         active = set(Material.objects.filter(withdrawn_at__isnull=True).values_list("storage_key", flat=True))
+        active.update(Report.objects.values_list("storage_key", flat=True))
         missing = sum(not storage.exists(key) for key in active)
         cutoff = time.time() - options["min_age_hours"] * 3600
         orphans = deleted = 0
@@ -35,7 +37,10 @@ class Command(BaseCommand):
                 if key in active or path.stat().st_mtime > cutoff:
                     continue
                 # Re-check DB immediately before deletion. Still run offline: no distributed FS/DB atomicity.
-                if Material.objects.filter(storage_key=key, withdrawn_at__isnull=True).exists():
+                if (
+                    Material.objects.filter(storage_key=key, withdrawn_at__isnull=True).exists()
+                    or Report.objects.filter(storage_key=key).exists()
+                ):
                     continue
                 orphans += 1
                 if options["delete_orphans"]:

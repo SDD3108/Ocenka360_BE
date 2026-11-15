@@ -30,6 +30,8 @@ class FeaturesSerializer(serializers.Serializer):
     communications = serializers.BooleanField()
     notification_inbox = serializers.BooleanField()
     push = serializers.BooleanField()
+    reports = serializers.BooleanField()
+    reviewer_operations = serializers.BooleanField()
     ai = serializers.BooleanField()
 
 

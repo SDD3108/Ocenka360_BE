@@ -1,5 +1,36 @@
 # Only server-owned generic text is allowed in push. Never interpolate comment/PII.
 TEXT = {
+    "report_published": (
+        "Отчёт готов к скачиванию",
+        "Есеп жүктеп алуға дайын",
+        "Your report is ready to download",
+    ),
+    "report_withdrawn": (
+        "Оценщик отозвал отчёт для исправления",
+        "Бағалаушы есепті түзету үшін қайтарып алды",
+        "The appraiser withdrew the report for correction",
+    ),
+    "original_ready": (
+        "Бумажный оригинал готов к выдаче",
+        "Қағаз түпнұсқасы дайын",
+        "The paper original is ready for collection",
+    ),
+    "original_handed_over": (
+        "Передача оригинала отмечена оценщиком",
+        "Бағалаушы түпнұсқаның берілгенін белгіледі",
+        "The appraiser recorded the original handover",
+    ),
+    "original_delivery_requested": (
+        "Клиент просит согласовать доставку",
+        "Клиент жеткізуді келісуді сұрайды",
+        "The client would like to arrange delivery",
+    ),
+    "report_overdue": (
+        "Истёк срок подготовки отчёта",
+        "Есепті дайындау мерзімі өтті",
+        "A report deadline has passed",
+    ),
+    "review_task_due": ("Есть просроченная задача", "Мерзімі өткен тапсырма бар", "A task is overdue"),
     "new_order": ("Поступила новая заявка", "Жаңа өтінім келді", "A new order is available"),
     "comment_added": ("Новый комментарий к заявке", "Өтінімге жаңа пікір қосылды", "New order comment"),
     "materials_requested": (
@@ -63,6 +94,13 @@ TEXT = {
     "updated": ("В заявке есть обновление", "Өтінім жаңартылды", "There is an update to your order"),
 }
 ACTIONS = {
+    "report_published",
+    "report_withdrawn",
+    "original_ready",
+    "original_handed_over",
+    "original_delivery_requested",
+    "report_overdue",
+    "review_task_due",
     "comment_added",
     "materials_requested",
     "resubmitted",
@@ -97,3 +135,6 @@ ACTIONS = {
 
 def body(kind, language):
     return TEXT.get(kind, TEXT["updated"])[{"ru": 0, "kk": 1, "en": 2}.get(language, 0)]
+
+
+REVIEW_ONLY = {"report_overdue", "review_task_due"}

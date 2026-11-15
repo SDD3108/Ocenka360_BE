@@ -62,6 +62,21 @@ class NotificationTests(CommunicationFixture):
         self.reviewer.refresh_from_db()
         self.assertFalse(services.visible(self.reviewer).exists())
 
+    def test_inbox_without_filter_includes_read_and_unread(self):
+        row, _, _ = self.pending()
+        self.api.force_authenticate(self.reviewer)
+        unfiltered = self.api.get(ROOT + "notifications/").json()
+        self.assertIn(str(row.notification_id), [n["id"] for n in unfiltered["results"]])
+        self.assertEqual(self.api.get(ROOT + "notifications/?unread=false").json()["count"], 0)
+        self.api.post(ROOT + f"notifications/{row.notification_id}/read/", {})
+        self.assertEqual(self.api.get(ROOT + "notifications/").json()["count"], unfiltered["count"])
+        read = self.api.get(ROOT + "notifications/?unread=false").json()["results"]
+        self.assertEqual([n["id"] for n in read], [str(row.notification_id)])
+        self.assertNotIn(
+            str(row.notification_id),
+            [n["id"] for n in self.api.get(ROOT + "notifications/?unread=true").json()["results"]],
+        )
+
     def test_event_idempotency_and_no_old_backfill(self):
         order = self.reviewing()
         before = Notification.objects.count()

@@ -55,9 +55,21 @@ class Order(models.Model):
         INSPECTION_SCHEDULED = "inspection_scheduled", "Осмотр согласован"
         IN_PROGRESS = "in_progress", "Работа начата"
         AWAITING_REPORT = "awaiting_report", "Готовится отчёт"
+        COMPLETED = "completed", "Отчёт опубликован"
         SERVICE_STOPPED = "service_stopped", "Услуга прекращена по согласованию"
         REJECTED = "rejected", "Отказ компании"
         CANCELLED = "cancelled", "Отменена клиентом"
+
+    class Source(models.TextChoices):
+        UNKNOWN = "unknown", "Не указан"
+        WEBSITE = "website", "Сайт"
+        MOBILE = "mobile", "Приложение"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        CALL = "call", "Звонок"
+        TWO_GIS = "2gis", "2ГИС"
+        INSTAGRAM = "instagram", "Instagram"
+        REFERRAL = "referral", "Рекомендация"
+        OTHER = "other", "Другое"
 
     class PaymentStatus(models.TextChoices):
         NOT_PAID = "not_paid", "Не оплачено"
@@ -82,6 +94,8 @@ class Order(models.Model):
     version = models.PositiveIntegerField(default=1)
     client_request_id = models.UUIDField()
     request_fingerprint = models.CharField(max_length=64, editable=False)
+    acquisition_source = models.CharField(max_length=16, choices=Source.choices, default=Source.UNKNOWN)
+    completed_at = models.DateTimeField(null=True, blank=True)
     payment_status = models.CharField(
         max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.NOT_PAID
     )
