@@ -55,11 +55,15 @@ class Order(models.Model):
         INSPECTION_SCHEDULED = "inspection_scheduled", "Осмотр согласован"
         IN_PROGRESS = "in_progress", "Работа начата"
         AWAITING_REPORT = "awaiting_report", "Готовится отчёт"
+        SERVICE_STOPPED = "service_stopped", "Услуга прекращена по согласованию"
         REJECTED = "rejected", "Отказ компании"
         CANCELLED = "cancelled", "Отменена клиентом"
 
     class PaymentStatus(models.TextChoices):
         NOT_PAID = "not_paid", "Не оплачено"
+        PARTIALLY_PAID = "partially_paid", "Частично оплачено"
+        PAID = "paid", "Оплачено"
+        REFUNDED = "refunded", "Возвращено"
         TEST_CONFIRMED = "test_confirmed", "Тестовая имитация — денег нет"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -97,7 +101,7 @@ class Order(models.Model):
             models.UniqueConstraint(fields=["owner", "client_request_id"], name="order_owner_request_unique"),
             models.CheckConstraint(condition=models.Q(version__gte=1), name="order_version_positive"),
             models.CheckConstraint(
-                condition=models.Q(payment_status="not_paid") | models.Q(is_test=True),
+                condition=~models.Q(payment_status="test_confirmed") | models.Q(is_test=True),
                 name="order_test_payment_only",
             ),
         ]

@@ -24,6 +24,8 @@ from apps.legal.models import LegalDocument
 from apps.legal.services import accept_documents
 from apps.materials.services import checklist, upload
 from apps.orders import services
+from apps.payments import services as payments
+from apps.payments.models import Refund
 from apps.pricing import services as pricing
 from apps.pricing.calculator import estimate
 from apps.scheduling import services as scheduling
@@ -33,6 +35,11 @@ class Command(BaseCommand):
     help = "LOCAL ONLY: demonstrate Parts 4–7 materials, prices, calendar and transitions and roll back every change. No real payments."
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            "--payments",
+            action="store_true",
+            help="Exercise the mock payment ledger, without banks or money.",
+        )
         parser.add_argument(
             "--inspection",
             action="store_true",
@@ -114,7 +121,22 @@ class Command(BaseCommand):
             self.stdout.write(f"Synthetic materials uploaded: {order.materials.count()}")
             order = services.submit_order(owner, order.pk, order.version, True)
             self.show(order)
-            order = services.simulate_payment(order.pk)
+            if options["payments"]:
+                intent, order, _ = payments.create_intent(
+                    owner,
+                    order.pk,
+                    {
+                        "expected_version": order.version,
+                        "client_request_id": uuid.uuid4(),
+                        "purpose": "advance",
+                        "provider": "mock",
+                    },
+                )
+                payments.simulate_payment(intent.pk)
+                order.refresh_from_db()
+                self.stdout.write("TEST ONLY advance recorded: 2000 KZT by default")
+            else:
+                order = services.simulate_payment(order.pk)
             self.show(order)
             order = services.review_action(reviewer, order.pk, order.version, "start_review")
             self.show(order)
@@ -153,6 +175,20 @@ class Command(BaseCommand):
             )
             self.show(order)
             self.stdout.write(f"DEMO ONLY agreed: {quote.total} KZT; no payment was made.")
+            if options["payments"]:
+                intent, order, _ = payments.create_intent(
+                    owner,
+                    order.pk,
+                    {
+                        "expected_version": order.version,
+                        "client_request_id": uuid.uuid4(),
+                        "purpose": "balance",
+                        "provider": "mock",
+                    },
+                )
+                payments.simulate_payment(intent.pk)
+                order.refresh_from_db()
+                self.stdout.write(f"TEST ONLY net paid: {payments.balance(order)['net_paid']}")
             start = timezone.now() + timedelta(days=1)
             appointment, order, _ = scheduling.propose(
                 owner,
@@ -199,6 +235,11 @@ class Command(BaseCommand):
             else:
                 order = services.cancel_order(owner, order.pk, order.version, "TEST: отмена до начала работ")
             self.show(order)
+            if options["payments"] and not options["inspection"]:
+                for refund in Refund.objects.filter(receipt__intent__order=order):
+                    payments.simulate_refund(refund.pk)
+                order.refresh_from_db()
+                self.stdout.write(f"TEST ONLY refunded: {payments.balance(order)['refunded']}")
             self.stdout.write(f"Snapshots: {order.submissions.count()}, events: {order.events.count()}")
             transaction.set_rollback(True)
         self.stdout.write(self.style.SUCCESS("PASS. All demo data rolled back. No email or money sent."))

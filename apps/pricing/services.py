@@ -342,6 +342,10 @@ def decide_quote(
     quote.decision_comment = comment
     quote.save()
     orders.changed(order, actor, "price_" + action, before, f"{quote.pk}: {comment}")
+    if action == "accept":
+        from apps.payments.services import on_price_accepted
+
+        on_price_accepted(order, actor)
     return quote, order
 
 

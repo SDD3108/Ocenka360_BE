@@ -148,7 +148,7 @@ def create_order(actor, data):
         return existing, False
     if (
         Order.objects.filter(owner=actor)
-        .exclude(status__in=[Order.Status.CANCELLED, Order.Status.REJECTED])
+        .exclude(status__in=[Order.Status.CANCELLED, Order.Status.REJECTED, Order.Status.SERVICE_STOPPED])
         .count()
         >= settings.MAX_OPEN_ORDERS
     ):
@@ -282,6 +282,9 @@ def cancel_order(actor, order_id, expected_version, reason=""):
 
     close_order_schedule(order, actor)
     close_order_pricing(order, actor)
+    from apps.payments.services import on_order_closed
+
+    on_order_closed(order, actor)
     return order
 
 
@@ -328,6 +331,9 @@ def review_action(actor, order_id, expected_version, action, message=""):
 
         close_order_schedule(order, actor)
         close_order_pricing(order, actor)
+        from apps.payments.services import on_order_closed
+
+        on_order_closed(order, actor)
     return order
 
 
@@ -339,6 +345,8 @@ def simulate_payment(order_id):
     order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
     if order.status != Order.Status.AWAITING_PAYMENT:
         raise Conflict("Only awaiting_payment orders can be simulated.", code="invalid_transition")
+    if order.payment_intents.exists():
+        raise Conflict("Use the payment-ledger simulation command for this order.")
     before = order.status
     order.is_test = True
     order.payment_status = Order.PaymentStatus.TEST_CONFIRMED

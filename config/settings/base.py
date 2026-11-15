@@ -16,6 +16,7 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.
 INSTALLED_APPS = [
     "apps.pricing.apps.PricingConfig",
     "apps.scheduling.apps.SchedulingConfig",
+    "apps.payments.apps.PaymentsConfig",
     "apps.materials.apps.MaterialsConfig",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -135,7 +136,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
     "DESCRIPTION": "Part 6: versioned tariffs, preliminary estimates, price agreements and promo codes. "
     "Bank payments, final appraisal reports and work execution are not implemented yet.",
-    "VERSION": "0.7.0",
+    "VERSION": "0.8.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -143,6 +144,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "PaymentProviderEnum": "apps.payments.models.PAYMENT_PROVIDER_CHOICES",
+        "PaymentStateEnum": "apps.payments.models.PAYMENT_STATE_CHOICES",
+        "RefundStateEnum": "apps.payments.models.REFUND_STATE_CHOICES",
         "AppointmentStateEnum": "apps.scheduling.models.APPOINTMENT_STATE_CHOICES",
         "InspectionModeEnum": "apps.scheduling.models.INSPECTION_MODE_CHOICES",
         "TariffModeEnum": "apps.pricing.models.TARIFF_MODE_CHOICES",
@@ -161,7 +165,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.7.0"
+APP_VERSION = "0.8.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.
@@ -222,3 +226,15 @@ FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 ]
+
+# Payments remain unavailable until explicitly configured; secrets never enter public config.
+PAYMENT_ADVANCE_KZT = env("PAYMENT_ADVANCE_KZT", default="2000.00")
+KASPI_PAYMENT_URL = env("KASPI_PAYMENT_URL", default="")
+HALYK_ENABLED = env.bool("HALYK_ENABLED", default=False)
+HALYK_ENVIRONMENT = env("HALYK_ENVIRONMENT", default="test")
+HALYK_CLIENT_ID = env("HALYK_CLIENT_ID", default="")
+HALYK_CLIENT_SECRET = env("HALYK_CLIENT_SECRET", default="")
+HALYK_TERMINAL_ID = env("HALYK_TERMINAL_ID", default="")
+PAYMENT_PUBLIC_ORIGIN = env("PAYMENT_PUBLIC_ORIGIN", default="")
+PAYMENT_RETURN_URL = env("PAYMENT_RETURN_URL", default="")
+HALYK_HTTP_TIMEOUT = 10

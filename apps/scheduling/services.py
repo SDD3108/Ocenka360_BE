@@ -275,6 +275,9 @@ def start_inspection(actor, order_id, appointment_id, expected_version, material
     orders.check_version(order, expected_version)
     if order.status != Order.Status.INSPECTION_SCHEDULED:
         raise orders.Conflict("A confirmed inspection is required.", code="invalid_transition")
+    from apps.payments.services import require_funded
+
+    require_funded(order)
     appointment = get_object_or_404(order.appointments, pk=appointment_id, state=Appointment.State.CONFIRMED)
     now = timezone.now()
     if not appointment.starts_at <= now < appointment.ends_at:

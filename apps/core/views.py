@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.payments.providers import available_methods
+
 from .serializers import ApiRootSerializer, HealthSerializer, PublicConfigSerializer
 
 
@@ -64,7 +66,8 @@ class PublicConfigView(PublicView):
                     "materials": True,
                     "pricing": True,
                     "scheduling": True,
-                    "payments": False,
+                    "payments": available_methods()["kaspi_manual"]
+                    or (available_methods()["halyk"] and settings.HALYK_ENVIRONMENT == "live"),
                     "ai": False,
                 },
             }
