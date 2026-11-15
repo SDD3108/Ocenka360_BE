@@ -1,0 +1,10 @@
+[Unit]
+Description=Ocenka 360 daily offline backup (host local time)
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=false
+Unit=ocenka360-backup.service
+
+[Install]
+WantedBy=timers.target

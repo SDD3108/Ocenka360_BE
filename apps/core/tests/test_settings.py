@@ -37,6 +37,9 @@ class ProductionSettingsTests(SimpleTestCase):
             {"DJANGO_ALLOWED_HOSTS": "*"},
             {"DATABASE_URL": "sqlite:///:memory:"},
             {"CORS_ALLOWED_ORIGINS": "http://office.example.invalid"},
+            {"CORS_ALLOWED_ORIGINS": "https://user:password@office.example.invalid"},
+            {"CORS_ALLOWED_ORIGINS": "https://office.example.invalid/path"},
+            {"CSRF_TRUSTED_ORIGINS": "https://*.example.invalid"},
             {"EMAIL_USE_SSL": "True", "EMAIL_USE_TLS": "True"},
         ):
             with self.subTest(changes=changes):

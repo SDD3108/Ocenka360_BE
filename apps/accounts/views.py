@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.network import client_ip
 from apps.core.serializers import ErrorSerializer
 
 from .authentication import SessionJWTAuthentication
@@ -46,7 +47,7 @@ class RequestCodeView(AuthPublicView):
     def post(self, request):
         serializer = RequestCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        challenge = request_code(**serializer.validated_data, ip=request.META.get("REMOTE_ADDR", "unknown"))
+        challenge = request_code(**serializer.validated_data, ip=client_ip(request))
         return Response(
             {
                 "challenge_id": challenge.id,
@@ -67,9 +68,7 @@ class VerifyCodeView(AuthPublicView):
     def post(self, request):
         serializer = VerifyCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user, pair, created = verify_code(
-            **serializer.validated_data, ip=request.META.get("REMOTE_ADDR", "unknown")
-        )
+        user, pair, created = verify_code(**serializer.validated_data, ip=client_ip(request))
         return Response({**pair, "user": CurrentUserSerializer(user).data, "is_new_user": created})
 
 

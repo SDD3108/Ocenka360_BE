@@ -1,0 +1,12 @@
+[Unit]
+Description=Ocenka 360 offline backup with a short maintenance window
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 /usr/local/sbin/ocenka360-backup.py
+# Manual enable only after a successful backup/restore drill.
+# The helper restores service state in finally; verify state after abrupt power loss/kill.
+TimeoutStartSec=infinity
+UMask=0077

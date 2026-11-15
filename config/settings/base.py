@@ -100,7 +100,7 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 # No media URL routes: private documents will be implemented in Part 5.
-MEDIA_ROOT = BASE_DIR / "private_media"
+MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_media")))
 FILE_UPLOAD_PERMISSIONS = 0o600
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
@@ -140,9 +140,9 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
-    "DESCRIPTION": "Part 11: optional Gemini assistance and reviewer-supplied comparable estimates. "
+    "DESCRIPTION": "Part 12: deployment checks, background scheduling and offline backup/recovery. "
     "AI, banks and push require external setup; official accident calculation is not connected.",
-    "VERSION": "0.11.0",
+    "VERSION": "0.12.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -177,7 +177,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.11.0"
+APP_VERSION = "0.12.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.
@@ -265,3 +265,6 @@ GEMINI_DATA_PROCESSING_APPROVED = env.bool("GEMINI_DATA_PROCESSING_APPROVED", de
 GEMINI_USER_DAILY_LIMIT = 20
 GEMINI_GLOBAL_DAILY_LIMIT = 100
 AI_CONTENT_RETENTION_DAYS = 7
+
+# Operational state is private and never served through HTTP.
+RUNTIME_ROOT = Path(env("RUNTIME_ROOT", default=str(BASE_DIR / ".runtime")))

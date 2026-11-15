@@ -19,3 +19,7 @@ private_media/
 .idea/
 .vscode/
 dist/
+
+.runtime/
+backups/
+*.tar.gz

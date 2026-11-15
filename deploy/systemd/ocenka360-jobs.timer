@@ -1,0 +1,11 @@
+[Unit]
+Description=Ocenka 360 background batches
+
+[Timer]
+OnBootSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=ocenka360-jobs.service
+
+[Install]
+WantedBy=timers.target

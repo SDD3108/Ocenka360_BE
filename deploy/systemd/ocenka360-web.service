@@ -1,0 +1,25 @@
+[Unit]
+Description=Ocenka 360 Django API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ocenka360
+Group=ocenka360
+WorkingDirectory=/opt/ocenka360/backend
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+EnvironmentFile=/etc/ocenka360/backend.env
+ExecStart=/opt/ocenka360/venv/bin/gunicorn --config deploy/gunicorn.conf.py config.wsgi:application
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=150
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ocenka360
+
+[Install]
+WantedBy=multi-user.target
