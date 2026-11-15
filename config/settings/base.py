@@ -14,6 +14,7 @@ DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 INSTALLED_APPS = [
+    "apps.pricing.apps.PricingConfig",
     "apps.materials.apps.MaterialsConfig",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -131,9 +132,9 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
-    "DESCRIPTION": "Part 5: private order documents/photos, requirements, manifests and appraiser review. "
+    "DESCRIPTION": "Part 6: versioned tariffs, preliminary estimates, price agreements and promo codes. "
     "Bank payments, final appraisal reports and work execution are not implemented yet.",
-    "VERSION": "0.5.0",
+    "VERSION": "0.6.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -141,6 +142,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "TariffModeEnum": "apps.pricing.models.TARIFF_MODE_CHOICES",
+        "PromoKindEnum": "apps.pricing.models.PROMO_KIND_CHOICES",
+        "QuoteStateEnum": "apps.pricing.models.QUOTE_STATE_CHOICES",
         "MaterialKindEnum": "apps.materials.models.MATERIAL_KIND_CHOICES",
         "MaterialSourceEnum": "apps.materials.models.MATERIAL_SOURCE_CHOICES",
         "MaterialScanEnum": "apps.materials.models.MATERIAL_SCAN_CHOICES",
@@ -154,7 +158,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.

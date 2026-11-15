@@ -51,6 +51,7 @@ class Order(models.Model):
         UNDER_REVIEW = "under_review", "На рассмотрении"
         NEEDS_INFORMATION = "needs_information", "Нужны уточнения"
         ACCEPTED = "accepted", "Принята для согласования условий"
+        PRICE_AGREED = "price_agreed", "Цена согласована клиентом"
         REJECTED = "rejected", "Отказ компании"
         CANCELLED = "cancelled", "Отменена клиентом"
 

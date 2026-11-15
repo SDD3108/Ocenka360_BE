@@ -62,6 +62,7 @@ class PublicConfigView(PublicView):
                     "catalog": True,
                     "orders": True,
                     "materials": True,
+                    "pricing": True,
                     "payments": False,
                     "ai": False,
                 },

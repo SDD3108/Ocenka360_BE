@@ -24,6 +24,7 @@ class FeaturesSerializer(serializers.Serializer):
     catalog = serializers.BooleanField()
     orders = serializers.BooleanField()
     materials = serializers.BooleanField()
+    pricing = serializers.BooleanField()
     payments = serializers.BooleanField()
     ai = serializers.BooleanField()
 

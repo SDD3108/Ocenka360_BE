@@ -162,6 +162,11 @@ class OrderEventSerializer(serializers.ModelSerializer):
 
 class OrderSubmissionSerializer(serializers.ModelSerializer):
     materials_snapshot = serializers.SerializerMethodField()
+    price_estimate_snapshot = serializers.SerializerMethodField()
+
+    def get_price_estimate_snapshot(self, obj) -> dict | None:
+        estimate = getattr(obj, "price_estimate", None)
+        return estimate.snapshot if estimate else None
 
     def get_materials_snapshot(self, obj) -> dict | None:
         # Part 4 records had no attachments: never invent a manifest for historical submissions.
@@ -176,6 +181,7 @@ class OrderSubmissionSerializer(serializers.ModelSerializer):
             "form_id",
             "form_checksum",
             "materials_snapshot",
+            "price_estimate_snapshot",
             "answers",
             "asset_snapshot",
             "service_snapshot",

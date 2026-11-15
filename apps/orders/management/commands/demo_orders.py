@@ -2,6 +2,8 @@
 
 import io
 import uuid
+from datetime import timedelta
+from decimal import Decimal
 from tempfile import TemporaryDirectory
 
 from django.conf import settings
@@ -21,10 +23,12 @@ from apps.legal.models import LegalDocument
 from apps.legal.services import accept_documents
 from apps.materials.services import checklist, upload
 from apps.orders import services
+from apps.pricing import services as pricing
+from apps.pricing.calculator import estimate
 
 
 class Command(BaseCommand):
-    help = "LOCAL ONLY: demonstrate Parts 4–5 materials and transitions and roll back every change. No real payments."
+    help = "LOCAL ONLY: demonstrate Parts 4–6 materials, prices and transitions and roll back every change. No real payments."
 
     def handle(self, *args, **options):
         if not settings.ALLOW_ORDER_SIMULATION:
@@ -119,6 +123,27 @@ class Command(BaseCommand):
             order = services.review_action(reviewer, order.pk, order.version, "start_review")
             order = services.review_action(reviewer, order.pk, order.version, "accept")
             self.show(order)
+            tariff = pricing.create_tariff(
+                reviewer, {"service_id": service.pk, "mode": "flat", "base_amount": Decimal("20000.00")}
+            )
+            pricing.publish_tariff(reviewer, tariff.pk, None)
+            self.stdout.write(f"DEMO ONLY estimate: {estimate(service, 'Астана', 'regular')['subtotal']} KZT")
+            quote, order, _ = pricing.issue_quote(
+                reviewer,
+                order.pk,
+                {
+                    "expected_version": order.version,
+                    "client_request_id": uuid.uuid4(),
+                    "lines": [{"kind": "appraisal", "title": "TEST ONLY", "amount": Decimal("20000.00")}],
+                    "terms": "DEMO ONLY: no real quote or payment",
+                    "expires_at": timezone.now() + timedelta(hours=24),
+                },
+            )
+            quote, order = pricing.decide_quote(
+                owner, order.pk, quote.pk, order.version, "accept", confirmed=True
+            )
+            self.show(order)
+            self.stdout.write(f"DEMO ONLY agreed: {quote.total} KZT; no payment was made.")
             order = services.cancel_order(owner, order.pk, order.version, "TEST: отмена до начала работ")
             self.show(order)
             self.stdout.write(f"Snapshots: {order.submissions.count()}, events: {order.events.count()}")

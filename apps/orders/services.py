@@ -215,6 +215,10 @@ def snapshot_submission(order):
     )
 
     capture_manifest(submission)
+    from apps.pricing.models import SubmissionEstimate
+    from apps.pricing.services import estimate_order
+
+    SubmissionEstimate.objects.create(submission=submission, snapshot=estimate_order(order))
 
 
 @transaction.atomic
@@ -265,12 +269,17 @@ def cancel_order(actor, order_id, expected_version, reason=""):
         Order.Status.UNDER_REVIEW,
         Order.Status.NEEDS_INFORMATION,
         Order.Status.ACCEPTED,
+        Order.Status.PRICE_AGREED,
     }
     if order.status not in cancellable:
         raise Conflict("Cancellation is not available in this status.", code="invalid_transition")
     before = order.status
     order.status = Order.Status.CANCELLED
-    return changed(order, actor, "cancelled", before, reason)
+    order = changed(order, actor, "cancelled", before, reason)
+    from apps.pricing.services import close_order_pricing
+
+    close_order_pricing(order, actor)
+    return order
 
 
 def review_queryset():
@@ -296,6 +305,7 @@ def review_action(actor, order_id, expected_version, action, message=""):
                 Order.Status.UNDER_REVIEW,
                 Order.Status.NEEDS_INFORMATION,
                 Order.Status.ACCEPTED,
+                Order.Status.PRICE_AGREED,
             },
             Order.Status.REJECTED,
         ),
@@ -307,7 +317,12 @@ def review_action(actor, order_id, expected_version, action, message=""):
         raise ValidationError({"message": "Explain what is missing or why the request was rejected."})
     before = order.status
     order.status = target
-    return changed(order, actor, action, before, message)
+    order = changed(order, actor, action, before, message)
+    if action == "reject":
+        from apps.pricing.services import close_order_pricing
+
+        close_order_pricing(order, actor)
+    return order
 
 
 @transaction.atomic
