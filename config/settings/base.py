@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.legal",
     "apps.catalog",
+    "apps.orders",
 ]
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
@@ -129,22 +130,26 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
-    "DESCRIPTION": "Part 3: service catalog, versioned questionnaires and document requirements. "
-    "Orders, uploads and payments are not implemented yet.",
-    "VERSION": "0.3.0",
+    "DESCRIPTION": "Part 4: owned assets, order drafts, confirmation, review workflow and audit history. "
+    "Bank payments, file uploads and work execution are not implemented yet.",
+    "VERSION": "0.4.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
     "COMPONENT_SPLIT_REQUEST": True,
-    "ENUM_NAME_OVERRIDES": {"LanguageEnum": LANGUAGES},
+    "ENUM_NAME_OVERRIDES": {
+        "LanguageEnum": LANGUAGES,
+        "AssetKindEnum": "apps.orders.models.ASSET_KIND_CHOICES",
+        "OrderStatusEnum": "apps.orders.models.ORDER_STATUS_CHOICES",
+    },
 }
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.4.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.
@@ -184,3 +189,9 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+
+# Only local/test explicitly enable this developer-only workflow simulation.
+ALLOW_ORDER_SIMULATION = False
+
+MAX_ACTIVE_ASSETS = 100
+MAX_OPEN_ORDERS = 30

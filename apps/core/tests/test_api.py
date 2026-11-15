@@ -45,7 +45,10 @@ class SystemApiTests(TestCase):
         self.assertEqual(data["currency"], "KZT")
         self.assertTrue(data["features"]["email_otp"])
         self.assertTrue(data["features"]["catalog"])
-        self.assertFalse(any(v for k, v in data["features"].items() if k not in {"email_otp", "catalog"}))
+        self.assertTrue(data["features"]["orders"])
+        self.assertFalse(
+            any(v for k, v in data["features"].items() if k not in {"email_otp", "catalog", "orders"})
+        )
         for forbidden in ("SECRET_KEY", "DATABASE_URL", "EMAIL_HOST_PASSWORD"):
             self.assertNotContains(response, forbidden)
 

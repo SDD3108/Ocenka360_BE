@@ -28,3 +28,5 @@ elif EMAIL_DELIVERY_MODE != "console":
     raise ImproperlyConfigured("EMAIL_DELIVERY_MODE must be console or smtp.")
 if EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ImproperlyConfigured("Choose TLS or SSL, not both.")
+
+ALLOW_ORDER_SIMULATION = True

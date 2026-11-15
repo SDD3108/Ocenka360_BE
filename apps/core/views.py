@@ -60,7 +60,7 @@ class PublicConfigView(PublicView):
                 "features": {
                     "email_otp": True,
                     "catalog": True,
-                    "orders": False,
+                    "orders": True,
                     "payments": False,
                     "ai": False,
                 },

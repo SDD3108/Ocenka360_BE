@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: Оценка 360 API
-  version: 0.3.0
-  description: 'Part 3: service catalog, versioned questionnaires and document requirements.
-    Orders, uploads and payments are not implemented yet.'
+  version: 0.4.0
+  description: 'Part 4: owned assets, order drafts, confirmation, review workflow
+    and audit history. Bank payments, file uploads and work execution are not implemented
+    yet.'
 paths:
   /api/v1/:
     get:
@@ -52,6 +53,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/v1/assets/:
+    get:
+      operationId: v1_assets_list
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      tags:
+      - Assets
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssetList'
+          description: ''
+    post:
+      operationId: v1_assets_create
+      tags:
+      - Assets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+          description: ''
+  /api/v1/assets/{asset_id}/:
+    get:
+      operationId: v1_assets_retrieve
+      parameters:
+      - in: path
+        name: asset_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Assets
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+          description: ''
+    patch:
+      operationId: v1_assets_partial_update
+      parameters:
+      - in: path
+        name: asset_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Assets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAssetPatchRequest'
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v1/auth/logout/:
     post:
@@ -550,6 +651,488 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/orders/:
+    get:
+      operationId: v1_orders_list
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - awaiting_payment
+          - submitted
+          - under_review
+          - needs_information
+          - accepted
+          - rejected
+          - cancelled
+          type: string
+          minLength: 1
+        description: |-
+          * `draft` - Черновик
+          * `awaiting_payment` - Ожидает оплаты
+          * `submitted` - Отправлена оценщику
+          * `under_review` - На рассмотрении
+          * `needs_information` - Нужны уточнения
+          * `accepted` - Принята для согласования условий
+          * `rejected` - Отказ компании
+          * `cancelled` - Отменена клиентом
+      tags:
+      - Orders
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderSummaryList'
+          description: ''
+    post:
+      operationId: v1_orders_create
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/orders/{order_id}/:
+    get:
+      operationId: v1_orders_retrieve
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+    patch:
+      operationId: v1_orders_partial_update
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderPatchRequest'
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/orders/{order_id}/cancel/:
+    post:
+      operationId: v1_orders_cancel_create
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/orders/{order_id}/form/:
+    get:
+      operationId: v1_orders_form_retrieve
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+          description: ''
+  /api/v1/orders/{order_id}/history/:
+    get:
+      operationId: v1_orders_history_list
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderEventList'
+          description: ''
+  /api/v1/orders/{order_id}/submissions/:
+    get:
+      operationId: v1_orders_submissions_list
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderSubmissionList'
+          description: ''
+  /api/v1/orders/{order_id}/submit/:
+    post:
+      operationId: v1_orders_submit_create
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/review/orders/:
+    get:
+      operationId: v1_review_orders_list
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - awaiting_payment
+          - submitted
+          - under_review
+          - needs_information
+          - accepted
+          - rejected
+          - cancelled
+          type: string
+          minLength: 1
+        description: |-
+          * `draft` - Черновик
+          * `awaiting_payment` - Ожидает оплаты
+          * `submitted` - Отправлена оценщику
+          * `under_review` - На рассмотрении
+          * `needs_information` - Нужны уточнения
+          * `accepted` - Принята для согласования условий
+          * `rejected` - Отказ компании
+          * `cancelled` - Отменена клиентом
+      tags:
+      - Order review
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderSummaryList'
+          description: ''
+  /api/v1/review/orders/{order_id}/:
+    get:
+      operationId: v1_review_orders_retrieve
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Order review
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewOrderDetail'
+          description: ''
+  /api/v1/review/orders/{order_id}/actions/:
+    post:
+      operationId: v1_review_orders_actions_create
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Order review
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewActionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewOrderDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/review/orders/{order_id}/form/:
+    get:
+      operationId: v1_review_orders_form_retrieve
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - ru
+          * `kk` - kk
+          * `en` - en
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Order review
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+          description: ''
+  /api/v1/review/orders/{order_id}/history/:
+    get:
+      operationId: v1_review_orders_history_list
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Order review
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderEventList'
+          description: ''
+  /api/v1/review/orders/{order_id}/submissions/:
+    get:
+      operationId: v1_review_orders_submissions_list
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Order review
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderSubmissionList'
+          description: ''
 components:
   schemas:
     Acceptance:
@@ -570,6 +1153,18 @@ components:
       - accepted_at
       - document
       - document_checksum
+    ActionEnum:
+      enum:
+      - start_review
+      - request_information
+      - accept
+      - reject
+      type: string
+      description: |-
+        * `start_review` - start_review
+        * `request_information` - request_information
+        * `accept` - accept
+        * `reject` - reject
     ApiRoot:
       type: object
       properties:
@@ -583,6 +1178,103 @@ components:
       - api_version
       - service
       - version
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AssetKindEnum'
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        address:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        is_archived:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - city
+      - created_at
+      - description
+      - id
+      - is_archived
+      - kind
+      - title
+      - updated_at
+      - version
+    AssetCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        kind:
+          $ref: '#/components/schemas/AssetKindEnum'
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          default: ''
+          maxLength: 300
+        description:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - city
+      - kind
+      - title
+    AssetKindEnum:
+      enum:
+      - apartment
+      - house
+      - land
+      - commercial
+      - vehicle
+      - equipment
+      - business
+      - intangible
+      - biological
+      - other
+      type: string
+      description: |-
+        * `apartment` - Квартира
+        * `house` - Дом
+        * `land` - Земля
+        * `commercial` - Нежилой объект
+        * `vehicle` - Транспорт
+        * `equipment` - Оборудование
+        * `business` - Бизнес
+        * `intangible` - Нематериальные активы
+        * `biological` - Биологические активы
+        * `other` - Другое
     AuthSession:
       type: object
       properties:
@@ -611,6 +1303,18 @@ components:
       - expires_at
       - id
       - last_used_at
+    CancelRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - expected_version
     Category:
       type: object
       properties:
@@ -764,6 +1468,36 @@ components:
       - phone_verified
       - requires_consent
       - role
+    CustomerContact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          readOnly: true
+        preferred_language:
+          type: string
+          readOnly: true
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+      - phone_number
+      - preferred_language
     DocumentRequirement:
       type: object
       properties:
@@ -889,19 +1623,17 @@ components:
       type: object
       properties:
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/HealthStatusEnum'
       required:
       - status
-    KindEnum:
+    HealthStatusEnum:
       enum:
-      - terms
-      - privacy
-      - personal_data
+      - ok
+      - unavailable
       type: string
       description: |-
-        * `terms` - Пользовательское соглашение
-        * `privacy` - Политика конфиденциальности
-        * `personal_data` - Согласие на обработку данных
+        * `ok` - ok
+        * `unavailable` - unavailable
     LanguageEnum:
       enum:
       - ru
@@ -921,7 +1653,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/LegalDocumentKindEnum'
           readOnly: true
         version:
           type: string
@@ -951,6 +1683,16 @@ components:
       - language
       - title
       - version
+    LegalDocumentKindEnum:
+      enum:
+      - terms
+      - privacy
+      - personal_data
+      type: string
+      description: |-
+        * `terms` - Пользовательское соглашение
+        * `privacy` - Политика конфиденциальности
+        * `personal_data` - Согласие на обработку данных
     Option:
       type: object
       properties:
@@ -961,6 +1703,375 @@ components:
       required:
       - label
       - value
+    OrderCreateRequest:
+      type: object
+      properties:
+        client_request_id:
+          type: string
+          format: uuid
+          description: Generate once per new draft; reuse only for identical retries.
+        asset_id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        form_id:
+          type: string
+          format: uuid
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          default: ru
+        answers: {}
+      required:
+      - asset_id
+      - client_request_id
+      - form_id
+      - service_id
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        asset_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_slug:
+          type: string
+          readOnly: true
+        form_id:
+          type: string
+          format: uuid
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        payment_status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        is_test:
+          type: boolean
+          readOnly: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        answers:
+          readOnly: true
+        asset_snapshot:
+          readOnly: true
+        service_snapshot:
+          readOnly: true
+        review_unlocked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - answers
+      - asset_id
+      - asset_snapshot
+      - confirmed_at
+      - created_at
+      - form_id
+      - id
+      - is_test
+      - language
+      - number
+      - payment_status
+      - review_unlocked_at
+      - service_id
+      - service_slug
+      - service_snapshot
+      - status
+      - updated_at
+      - version
+    OrderEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        actor_role:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        from_status:
+          type: string
+          readOnly: true
+        to_status:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor_role
+      - created_at
+      - from_status
+      - id
+      - message
+      - to_status
+      - version
+    OrderStatusEnum:
+      enum:
+      - draft
+      - awaiting_payment
+      - submitted
+      - under_review
+      - needs_information
+      - accepted
+      - rejected
+      - cancelled
+      type: string
+      description: |-
+        * `draft` - Черновик
+        * `awaiting_payment` - Ожидает оплаты
+        * `submitted` - Отправлена оценщику
+        * `under_review` - На рассмотрении
+        * `needs_information` - Нужны уточнения
+        * `accepted` - Принята для согласования условий
+        * `rejected` - Отказ компании
+        * `cancelled` - Отменена клиентом
+    OrderSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        form_id:
+          type: string
+          format: uuid
+          readOnly: true
+        form_checksum:
+          type: string
+          readOnly: true
+        answers:
+          readOnly: true
+        asset_snapshot:
+          readOnly: true
+        service_snapshot:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - answers
+      - asset_snapshot
+      - created_at
+      - form_checksum
+      - form_id
+      - id
+      - service_snapshot
+      - version
+    OrderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        asset_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_slug:
+          type: string
+          readOnly: true
+        form_id:
+          type: string
+          format: uuid
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        payment_status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        is_test:
+          type: boolean
+          readOnly: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - asset_id
+      - confirmed_at
+      - created_at
+      - form_id
+      - id
+      - is_test
+      - language
+      - number
+      - payment_status
+      - service_id
+      - service_slug
+      - status
+      - updated_at
+      - version
+    PaginatedAssetList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+    PaginatedOrderEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEvent'
+    PaginatedOrderSubmissionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSubmission'
+    PaginatedOrderSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
     PaginatedServiceList:
       type: object
       required:
@@ -984,6 +2095,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Service'
+    PatchedAssetPatchRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        kind:
+          $ref: '#/components/schemas/AssetKindEnum'
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+          maxLength: 2000
+        is_archived:
+          type: boolean
     PatchedCurrentUserRequest:
       type: object
       properties:
@@ -1007,6 +2142,24 @@ components:
           allOf:
           - $ref: '#/components/schemas/LanguageEnum'
           title: Язык
+    PatchedOrderPatchRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        answers: {}
+        form_id:
+          type: string
+          format: uuid
+    PaymentStatusEnum:
+      enum:
+      - not_paid
+      - test_confirmed
+      type: string
+      description: |-
+        * `not_paid` - Не оплачено
+        * `test_confirmed` - Тестовая имитация — денег нет
     PublicConfig:
       type: object
       properties:
@@ -1054,6 +2207,112 @@ components:
           default: ru
       required:
       - email
+    ReviewActionRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        message:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - action
+      - expected_version
+    ReviewOrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        asset_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_id:
+          type: string
+          format: uuid
+          readOnly: true
+        service_slug:
+          type: string
+          readOnly: true
+        form_id:
+          type: string
+          format: uuid
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        payment_status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        is_test:
+          type: boolean
+          readOnly: true
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        answers:
+          readOnly: true
+        asset_snapshot:
+          readOnly: true
+        service_snapshot:
+          readOnly: true
+        review_unlocked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        customer:
+          allOf:
+          - $ref: '#/components/schemas/CustomerContact'
+          readOnly: true
+      required:
+      - answers
+      - asset_id
+      - asset_snapshot
+      - confirmed_at
+      - created_at
+      - customer
+      - form_id
+      - id
+      - is_test
+      - language
+      - number
+      - payment_status
+      - review_unlocked_at
+      - service_id
+      - service_slug
+      - service_snapshot
+      - status
+      - updated_at
+      - version
     RoleEnum:
       enum:
       - client
@@ -1099,14 +2358,17 @@ components:
       - slug
       - summary
       - title
-    StatusEnum:
-      enum:
-      - ok
-      - unavailable
-      type: string
-      description: |-
-        * `ok` - ok
-        * `unavailable` - unavailable
+    SubmitRequest:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        confirmed:
+          type: boolean
+      required:
+      - confirmed
+      - expected_version
     TokenPair:
       type: object
       properties:
