@@ -24,7 +24,9 @@ class Conflict(APIException):
 
 
 def actor_for_write(actor, consent=True, reviewer=False):
-    user = get_object_or_404(User.objects.select_for_update(), pk=actor.pk, is_active=True)
+    # Serialize actor writes while allowing recipient foreign-key checks in other transactions.
+    # PostgreSQL FOR NO KEY UPDATE prevents actor -> order -> recipient FK deadlocks.
+    user = get_object_or_404(User.objects.select_for_update(no_key=True), pk=actor.pk, is_active=True)
     if reviewer and user.role not in {User.Role.APPRAISER, User.Role.ADMIN}:
         raise PermissionDenied("Reviewer role required.")
     if not user.email_verified_at:
@@ -89,7 +91,7 @@ def validate_answers(form, answers, complete=False):
 
 
 def event(order, actor, action, before, message=""):
-    OrderEvent.objects.create(
+    record = OrderEvent.objects.create(
         order=order,
         version=order.version,
         actor=actor,
@@ -99,6 +101,13 @@ def event(order, actor, action, before, message=""):
         to_status=order.status,
         message=message,
     )
+
+    from apps.communications.services import CLOSED, close_requests
+    from apps.notifications.services import notify_event
+
+    if order.status in CLOSED:
+        close_requests(order)
+    notify_event(record)
 
 
 def changed(order, actor, action, before, message=""):
@@ -246,8 +255,10 @@ def submit_order(actor, order_id, expected_version, confirmed):
             raise Conflict("Review is not unlocked.", code="payment_required")
         order.status = Order.Status.SUBMITTED
     order.answers = validate_answers(order.form, order.answers, complete=True)
+    from apps.communications.services import require_answered
     from apps.materials.services import require_materials
 
+    require_answered(order)
     require_materials(order)
     order.confirmed_at = timezone.now()
     changed(order, actor, "confirmed" if before == Order.Status.DRAFT else "resubmitted", before)
@@ -322,6 +333,10 @@ def review_action(actor, order_id, expected_version, action, message=""):
         raise Conflict("Action is not available in this status.", code="invalid_transition")
     if action in {"request_information", "reject"} and not message.strip():
         raise ValidationError({"message": "Explain what is missing or why the request was rejected."})
+    if action == "accept":
+        from apps.communications.services import require_resolved
+
+        require_resolved(order)
     before = order.status
     order.status = target
     order = changed(order, actor, action, before, message)

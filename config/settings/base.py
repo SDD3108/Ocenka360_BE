@@ -14,6 +14,8 @@ DEBUG = False
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 INSTALLED_APPS = [
+    "apps.communications",
+    "apps.notifications",
     "apps.pricing.apps.PricingConfig",
     "apps.scheduling.apps.SchedulingConfig",
     "apps.payments.apps.PaymentsConfig",
@@ -136,7 +138,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
     "DESCRIPTION": "Part 6: versioned tariffs, preliminary estimates, price agreements and promo codes. "
     "Bank payments, final appraisal reports and work execution are not implemented yet.",
-    "VERSION": "0.8.0",
+    "VERSION": "0.9.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -165,7 +167,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.9.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.
@@ -238,3 +240,8 @@ HALYK_TERMINAL_ID = env("HALYK_TERMINAL_ID", default="")
 PAYMENT_PUBLIC_ORIGIN = env("PAYMENT_PUBLIC_ORIGIN", default="")
 PAYMENT_RETURN_URL = env("PAYMENT_RETURN_URL", default="")
 HALYK_HTTP_TIMEOUT = 10
+
+# Disabled until a real Expo project, credentials and mobile registration are tested.
+EXPO_PUSH_ENABLED = env.bool("EXPO_PUSH_ENABLED", default=False)
+EXPO_PROJECT_ID = env("EXPO_PROJECT_ID", default="")
+EXPO_ACCESS_TOKEN = env("EXPO_ACCESS_TOKEN", default="")

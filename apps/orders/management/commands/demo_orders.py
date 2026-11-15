@@ -36,6 +36,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--communications",
+            action="store_true",
+            help="Exercise comments, material requests and the notification inbox.",
+        )
+        parser.add_argument(
             "--payments",
             action="store_true",
             help="Exercise the mock payment ledger, without banks or money.",
@@ -140,6 +145,48 @@ class Command(BaseCommand):
             self.show(order)
             order = services.review_action(reviewer, order.pk, order.version, "start_review")
             self.show(order)
+            if options["communications"]:
+                from apps.communications import services as communication
+                from apps.materials.services import review_material
+                from apps.notifications.models import Notification
+
+                _, order, _ = communication.comment(owner, order.pk, uuid.uuid4(), "TEST: вопрос")
+                material = order.materials.filter(kind="document").first()
+                req, order, _ = communication.request_materials(
+                    reviewer,
+                    order.pk,
+                    order.version,
+                    uuid.uuid4(),
+                    "TEST: уточнение",
+                    [
+                        {
+                            "kind": material.kind,
+                            "slot_key": material.slot_key,
+                            "instruction": "TEST: приложите копию",
+                            "where_to_get": "TEST",
+                        }
+                    ],
+                )
+                _, order, _ = communication.respond(
+                    owner, order.pk, req.pk, order.version, uuid.uuid4(), "TEST: ответ", [material.pk], True
+                )
+                order = services.review_action(reviewer, order.pk, order.version, "start_review")
+                _, order = review_material(
+                    reviewer, order.pk, material.pk, order.version, "accepted", "TEST: проверено"
+                )
+                req, order = communication.decide(
+                    reviewer, order.pk, req.pk, order.version, "accept", "TEST: принято"
+                )
+                if (
+                    req.state != "resolved"
+                    or not Notification.objects.filter(
+                        recipient=owner, kind="material_request_accept"
+                    ).exists()
+                ):
+                    raise CommandError("Communication scenario failed.")
+                self.stdout.write(
+                    "PASS: comment, structured request, pinned reply, reviewer acceptance and notification inbox; no push sent"
+                )
             order = services.review_action(
                 reviewer, order.pk, order.version, "request_information", "TEST: уточните площадь"
             )

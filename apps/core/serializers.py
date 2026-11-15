@@ -27,6 +27,9 @@ class FeaturesSerializer(serializers.Serializer):
     pricing = serializers.BooleanField()
     scheduling = serializers.BooleanField()
     payments = serializers.BooleanField()
+    communications = serializers.BooleanField()
+    notification_inbox = serializers.BooleanField()
+    push = serializers.BooleanField()
     ai = serializers.BooleanField()
 
 

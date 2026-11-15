@@ -216,7 +216,11 @@ def withdraw(actor, order_id, material_id, expected_version, review=False):
     material = get_object_or_404(
         order.materials, pk=material_id, uploaded_by=actor, withdrawn_at__isnull=True
     )
-    if material.submission_links.exists() or material.inspection_links.exists():
+    if (
+        material.submission_links.exists()
+        or material.inspection_links.exists()
+        or material.reply_links.exists()
+    ):
         raise orders.Conflict(
             "A confirmed file is part of the order history and cannot be removed here.",
             code="material_pinned",

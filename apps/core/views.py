@@ -68,6 +68,11 @@ class PublicConfigView(PublicView):
                     "scheduling": True,
                     "payments": available_methods()["kaspi_manual"]
                     or (available_methods()["halyk"] and settings.HALYK_ENVIRONMENT == "live"),
+                    "communications": True,
+                    "notification_inbox": True,
+                    "push": bool(
+                        settings.EXPO_PUSH_ENABLED and settings.EXPO_PROJECT_ID and settings.EXPO_ACCESS_TOKEN
+                    ),
                     "ai": False,
                 },
             }
