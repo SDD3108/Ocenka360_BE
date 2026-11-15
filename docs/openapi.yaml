@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: Оценка 360 API
+  version: 0.1.0
+  description: 'Part 1: infrastructure, public configuration and current user. Email
+    OTP, JWT, orders and payments are not implemented yet.'
+paths:
+  /api/v1/:
+    get:
+      operationId: v1_retrieve
+      tags:
+      - System
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiRoot'
+          description: ''
+  /api/v1/accounts/me/:
+    get:
+      operationId: v1_accounts_me_retrieve
+      tags:
+      - Accounts
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/config/:
+    get:
+      operationId: v1_config_retrieve
+      tags:
+      - System
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicConfig'
+          description: ''
+  /api/v1/health/live/:
+    get:
+      operationId: v1_health_live_retrieve
+      tags:
+      - System
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+  /api/v1/health/ready/:
+    get:
+      operationId: v1_health_ready_retrieve
+      tags:
+      - System
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+components:
+  schemas:
+    ApiRoot:
+      type: object
+      properties:
+        service:
+          type: string
+        version:
+          type: string
+        api_version:
+          type: string
+      required:
+      - api_version
+      - service
+      - version
+    Company:
+      type: object
+      properties:
+        name:
+          type: string
+        legal_name:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        address:
+          type: string
+      required:
+      - address
+      - email
+      - legal_name
+      - name
+      - phone
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+          title: Имя
+        last_name:
+          type: string
+          readOnly: true
+          title: Фамилия
+        phone_number:
+          type: string
+          readOnly: true
+          title: Телефон
+        preferred_language:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          readOnly: true
+          title: Язык
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+          title: Роль
+        email_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Email подтверждён
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата регистрации
+      required:
+      - date_joined
+      - email
+      - email_verified_at
+      - first_name
+      - id
+      - last_name
+      - phone_number
+      - preferred_language
+      - role
+    Error:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+      required:
+      - error
+    ErrorDetail:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - details
+      - message
+    Features:
+      type: object
+      properties:
+        email_otp:
+          type: boolean
+        orders:
+          type: boolean
+        payments:
+          type: boolean
+        ai:
+          type: boolean
+      required:
+      - ai
+      - email_otp
+      - orders
+      - payments
+    Health:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - status
+    PreferredLanguageEnum:
+      enum:
+      - ru
+      - kk
+      - en
+      type: string
+      description: |-
+        * `ru` - Русский
+        * `kk` - Қазақша
+        * `en` - English
+    PublicConfig:
+      type: object
+      properties:
+        company:
+          $ref: '#/components/schemas/Company'
+        default_language:
+          type: string
+        supported_languages:
+          type: array
+          items:
+            type: string
+        currency:
+          type: string
+        timezone:
+          type: string
+        features:
+          $ref: '#/components/schemas/Features'
+      required:
+      - company
+      - currency
+      - default_language
+      - features
+      - supported_languages
+      - timezone
+    RoleEnum:
+      enum:
+      - client
+      - appraiser
+      - admin
+      type: string
+      description: |-
+        * `client` - Клиент
+        * `appraiser` - Оценщик
+        * `admin` - Администратор
+    StatusEnum:
+      enum:
+      - ok
+      - unavailable
+      type: string
+      description: |-
+        * `ok` - ok
+        * `unavailable` - unavailable
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

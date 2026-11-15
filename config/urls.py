@@ -1,0 +1,21 @@
+from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+from apps.core.views import ApiRootView
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/v1/", ApiRootView.as_view(), name="api-root"),
+    path("api/v1/", include("apps.core.urls")),
+    path("api/v1/accounts/", include("apps.accounts.urls")),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+]
+handler400 = "apps.core.errors.bad_request"
+handler403 = "apps.core.errors.permission_denied"
+handler404 = "apps.core.errors.not_found"
+handler500 = "apps.core.errors.server_error"
+admin.site.site_header = "Оценка 360 — администрирование"
+admin.site.site_title = "Оценка 360"
+admin.site.index_title = "Управление системой"

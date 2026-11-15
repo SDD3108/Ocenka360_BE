@@ -1,0 +1,19 @@
+# Optional local PostgreSQL only. Run Django on the Mac using the README.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ocenka360
+      POSTGRES_USER: ocenka360
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Add POSTGRES_PASSWORD to your local .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ocenka360 -d ocenka360"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres_data:
