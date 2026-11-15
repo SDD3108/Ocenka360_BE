@@ -25,3 +25,5 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
+
+ALLOW_DRAFT_LEGAL_DOCUMENTS = True

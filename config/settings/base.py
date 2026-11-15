@@ -1,6 +1,8 @@
+from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.utils.crypto import salted_hmac
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
@@ -24,6 +26,7 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     "apps.core",
     "apps.accounts",
+    "apps.legal",
 ]
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
@@ -103,7 +106,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.accounts.authentication.SessionJWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
@@ -122,21 +128,22 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Оценка 360 API",
-    "DESCRIPTION": "Part 1: infrastructure, public configuration and current user. "
-    "Email OTP, JWT, orders and payments are not implemented yet.",
-    "VERSION": "0.1.0",
+    "DESCRIPTION": "Part 2: email OTP, revocable JWT sessions, profile and versioned consents. "
+    "Business modules and payments are not implemented yet.",
+    "VERSION": "0.2.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {"LanguageEnum": LANGUAGES},
 }
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Ocenka 360 <noreply@example.invalid>")
 EMAIL_TIMEOUT = 10
 COMPANY_LEGAL_NAME = env("COMPANY_LEGAL_NAME", default="")
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 
 # Routine application logs never include bodies, headers, codes or file contents.
 # Part 12 will add central monitoring and an operational retention policy.
@@ -148,3 +155,31 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "INFO"},
     "loggers": {"django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False}},
 }
+
+# Part 2 authentication. JWT signing uses an isolated derived key by default.
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": salted_hmac(
+        "ocenka360-jwt-signing", "v1", secret=SECRET_KEY, algorithm="sha256"
+    ).hexdigest(),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "UPDATE_LAST_LOGIN": False,
+}
+OTP_TTL_SECONDS = 600
+OTP_RESEND_SECONDS = 60
+OTP_MAX_ATTEMPTS = 5
+OTP_EMAIL_HOURLY_LIMIT = 5
+OTP_IP_HOURLY_LIMIT = 30
+OTP_GLOBAL_DAILY_LIMIT = env.int("OTP_GLOBAL_DAILY_LIMIT", default=500)
+OTP_VERIFY_IP_LIMIT = 60
+ALLOW_DRAFT_LEGAL_DOCUMENTS = False
+EMAIL_DELIVERY_MODE = env("EMAIL_DELIVERY_MODE", default="console")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)

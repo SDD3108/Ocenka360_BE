@@ -1,4 +1,4 @@
-# Exact versions validated for Part 1 (Python 3.12).
+# Exact versions validated for Part 2 (Python 3.12).
 asgiref==3.13.0
 attrs==26.1.0
 Django==5.2.19
@@ -21,3 +21,5 @@ sqlparse==0.6.1
 typing_extensions==4.16.0
 uritemplate==4.2.0
 whitenoise==6.12.0
+djangorestframework-simplejwt==5.5.1
+PyJWT==2.15.1

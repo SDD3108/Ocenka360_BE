@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
   title: Оценка 360 API
-  version: 0.1.0
-  description: 'Part 1: infrastructure, public configuration and current user. Email
-    OTP, JWT, orders and payments are not implemented yet.'
+  version: 0.2.0
+  description: 'Part 2: email OTP, revocable JWT sessions, profile and versioned consents.
+    Business modules and payments are not implemented yet.'
 paths:
   /api/v1/:
     get:
@@ -25,6 +25,7 @@ paths:
       tags:
       - Accounts
       security:
+      - bearerAuth: []
       - cookieAuth: []
       responses:
         '200':
@@ -33,7 +34,187 @@ paths:
               schema:
                 $ref: '#/components/schemas/CurrentUser'
           description: ''
-        '403':
+    patch:
+      operationId: v1_accounts_me_partial_update
+      tags:
+      - Accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCurrentUserRequest'
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - Auth
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/logout-all/:
+    post:
+      operationId: v1_auth_logout_all_create
+      tags:
+      - Auth
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: v1_auth_refresh_create
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/request-code/:
+    post:
+      operationId: v1_auth_request_code_create
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCodeRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeRequested'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/sessions/:
+    get:
+      operationId: v1_auth_sessions_list
+      tags:
+      - Auth
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthSession'
+          description: ''
+  /api/v1/auth/sessions/{session_id}/:
+    delete:
+      operationId: v1_auth_sessions_destroy
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Auth
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/verify-code/:
+    post:
+      operationId: v1_auth_verify_code_create
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '429':
           content:
             application/json:
               schema:
@@ -87,8 +268,112 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
           description: ''
+  /api/v1/legal/consents/:
+    get:
+      operationId: v1_legal_consents_list
+      tags:
+      - Legal
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Acceptance'
+          description: ''
+    post:
+      operationId: v1_legal_consents_create
+      tags:
+      - Legal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/legal/documents/:
+    get:
+      operationId: v1_legal_documents_list
+      parameters:
+      - in: query
+        name: language
+        schema:
+          enum:
+          - ru
+          - kk
+          - en
+          type: string
+          default: ru
+          minLength: 1
+        description: |-
+          * `ru` - Русский
+          * `kk` - Қазақша
+          * `en` - English
+      tags:
+      - Legal
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalDocument'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
 components:
   schemas:
+    Acceptance:
+      type: object
+      properties:
+        document:
+          $ref: '#/components/schemas/LegalDocument'
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        document_checksum:
+          type: string
+          maxLength: 64
+        adult_confirmed:
+          type: boolean
+      required:
+      - accepted_at
+      - document
+      - document_checksum
     ApiRoot:
       type: object
       properties:
@@ -102,6 +387,51 @@ components:
       - api_version
       - service
       - version
+    AuthSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_used_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - device_name
+      - expires_at
+      - id
+      - last_used_at
+    CodeRequested:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        expires_in:
+          type: integer
+        resend_after:
+          type: integer
+        message:
+          type: string
+      required:
+      - challenge_id
+      - expires_in
+      - message
+      - resend_after
     Company:
       type: object
       properties:
@@ -123,6 +453,21 @@ components:
       - legal_name
       - name
       - phone
+    ConsentRequest:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 3
+          minItems: 3
+        adult_confirmed:
+          type: boolean
+      required:
+      - adult_confirmed
+      - documents
     CurrentUser:
       type: object
       properties:
@@ -136,20 +481,26 @@ components:
           readOnly: true
         first_name:
           type: string
-          readOnly: true
           title: Имя
+          maxLength: 150
         last_name:
           type: string
-          readOnly: true
           title: Фамилия
+          maxLength: 150
         phone_number:
-          type: string
-          readOnly: true
           title: Телефон
+          oneOf:
+          - type: string
+            pattern: ^\+[1-9]\d{7,14}$
+            maxLength: 16
+          - type: string
+            maxLength: 0
+        phone_verified:
+          type: boolean
+          readOnly: true
         preferred_language:
           allOf:
-          - $ref: '#/components/schemas/PreferredLanguageEnum'
-          readOnly: true
+          - $ref: '#/components/schemas/LanguageEnum'
           title: Язык
         role:
           allOf:
@@ -162,20 +513,28 @@ components:
           readOnly: true
           nullable: true
           title: Email подтверждён
+        adult_confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Подтверждение 18+
         date_joined:
           type: string
           format: date-time
           readOnly: true
           title: Дата регистрации
+        requires_consent:
+          type: boolean
+          readOnly: true
       required:
+      - adult_confirmed_at
       - date_joined
       - email
       - email_verified_at
-      - first_name
       - id
-      - last_name
-      - phone_number
-      - preferred_language
+      - phone_verified
+      - requires_consent
       - role
     Error:
       type: object
@@ -221,7 +580,17 @@ components:
           $ref: '#/components/schemas/StatusEnum'
       required:
       - status
-    PreferredLanguageEnum:
+    KindEnum:
+      enum:
+      - terms
+      - privacy
+      - personal_data
+      type: string
+      description: |-
+        * `terms` - Пользовательское соглашение
+        * `privacy` - Политика конфиденциальности
+        * `personal_data` - Согласие на обработку данных
+    LanguageEnum:
       enum:
       - ru
       - kk
@@ -231,6 +600,68 @@ components:
         * `ru` - Русский
         * `kk` - Қазақша
         * `en` - English
+    LegalDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        version:
+          type: string
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          readOnly: true
+        checksum:
+          type: string
+          readOnly: true
+        is_draft:
+          type: boolean
+          readOnly: true
+      required:
+      - checksum
+      - content
+      - id
+      - is_draft
+      - kind
+      - language
+      - title
+      - version
+    PatchedCurrentUserRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          title: Имя
+          maxLength: 150
+        last_name:
+          type: string
+          title: Фамилия
+          maxLength: 150
+        phone_number:
+          title: Телефон
+          oneOf:
+          - type: string
+            pattern: ^\+[1-9]\d{7,14}$
+            maxLength: 16
+          - type: string
+            maxLength: 0
+        preferred_language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Язык
     PublicConfig:
       type: object
       properties:
@@ -255,6 +686,29 @@ components:
       - features
       - supported_languages
       - timezone
+    RefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+          maxLength: 2048
+      required:
+      - refresh
+    RequestCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          default: ru
+      required:
+      - email
     RoleEnum:
       enum:
       - client
@@ -273,7 +727,82 @@ components:
       description: |-
         * `ok` - ok
         * `unavailable` - unavailable
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        token_type:
+          type: string
+        access_expires_in:
+          type: integer
+        session_expires_at:
+          type: string
+          format: date-time
+        session_id:
+          type: string
+          format: uuid
+      required:
+      - access
+      - access_expires_in
+      - refresh
+      - session_expires_at
+      - session_id
+      - token_type
+    VerifyCodeRequest:
+      type: object
+      properties:
+        challenge_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{6}$
+        device_name:
+          type: string
+          default: ''
+          maxLength: 80
+      required:
+      - challenge_id
+      - code
+    VerifyResult:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        token_type:
+          type: string
+        access_expires_in:
+          type: integer
+        session_expires_at:
+          type: string
+          format: date-time
+        session_id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/CurrentUser'
+        is_new_user:
+          type: boolean
+      required:
+      - access
+      - access_expires_in
+      - is_new_user
+      - refresh
+      - session_expires_at
+      - session_id
+      - token_type
+      - user
   securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     cookieAuth:
       type: apiKey
       in: cookie

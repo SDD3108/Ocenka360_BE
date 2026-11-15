@@ -48,7 +48,7 @@ Django создаёт отдельную БД test_ocenka360; пользоват
 
 ## Подготовка production-конфигурации
 
-`.env.production.example` — шаблон, не готовое окружение. Потребуются реальный домен, PostgreSQL, секрет, TLS и настроенный reverse proxy. SMTP в Part 1 не отправляет клиентские коды, даже если параметры заполнены.
+`.env.production.example` — шаблон, не готовое окружение. Потребуются реальный домен, PostgreSQL, секрет, TLS и настроенный reverse proxy. SMTP отправляет клиентские коды; настройка и ограничения описаны в AUTH.md.
 
 После настройки:
 
@@ -59,7 +59,7 @@ python manage.py collectstatic --noinput --settings=config.settings.production
 gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --access-logfile -
 ```
 
-Не выполнять эти команды с шаблонными значениями. Это подготовленный профиль настроек, а не обещание готовности Part 1 к публичной эксплуатации. Защита admin-входа, общий cache/rate limiter, HTTPS reverse proxy, резервные копии, мониторинг и домен входят в дальнейшую эксплуатационную подготовку.
+Не выполнять эти команды с шаблонными значениями. Это подготовленный профиль настроек, а не обещание готовности Part 2 к публичной эксплуатации. Защита admin-входа, пограничные ограничения запросов, HTTPS reverse proxy, резервные копии, мониторинг и домен входят в дальнейшую эксплуатационную подготовку.
 
 `TRUST_PROXY_HTTPS=True` разрешён только когда proxy заменяет входящий X-Forwarded-Proto, а прямой доступ к приложению закрыт. Иначе клиент может подделать HTTPS-признак. CORS и CSRF не заменяют авторизацию.
 
@@ -70,9 +70,9 @@ HSTS ограничен одним часом для текущего хоста
 - **No module named django**: активировать `.venv`, установить requirements.
 - **DJANGO_SECRET_KEY missing**: выполнить `python scripts/init_env.py`.
 - **DisallowedHost**: добавить точный hostname/IP в DJANGO_ALLOWED_HOSTS; не ставить `*`.
-- **403 на /accounts/me/**: войти в admin в том же браузере и на том же hostname; клиентский OTP ещё не реализован.
+- **401 на /accounts/me/**: получить access через email OTP и передать Bearer; либо войти в admin в том же браузере/hostname.
 - **Оценщик не входит в admin**: это ожидаемо. Не давать ему superuser ради входа; его кабинет будет отдельным.
-- **Email не приходит**: Part 1 не содержит отправки кодов. Console backend — только подготовка для следующего Part.
+- **Email не приходит**: local по умолчанию печатает код в runserver. Для реальной почты настрой SMTP (AUTH.md).
 - **Занят порт 8000**: `python manage.py runserver 127.0.0.1:8001`.
 - **Изменения модели**: создавать новую миграцию; не удалять 0001 после применения.
 - **Потерян пароль**: `python manage.py changepassword your-email@example.com`.
@@ -80,3 +80,7 @@ HSTS ограничен одним часом для текущего хоста
 ## Проверка CI
 
 `.github/workflows/ci.yml` запускается после загрузки проекта в GitHub. Есть две ветки проверки: SQLite и PostgreSQL 17. В среде сборки ZIP workflow не запускался. Сам YAML не является доказательством пройденного PostgreSQL-теста; фактические локальные проверки перечислены в VALIDATION.md.
+
+## Part 2
+
+После migrate выполнить seed_legal_drafts только локально; production требует утверждённых документов. Проверка полного входа: python scripts/demo_auth.py. Windows PowerShell команды без активации находятся в README. Три теста конкурентного доступа выполняются только в PostgreSQL CI; SQLite их пропускает. Для PowerShell задавай TEST_DATABASE_URL через `$env:TEST_DATABASE_URL = "postgresql://..."`, после чего запускай тесты.

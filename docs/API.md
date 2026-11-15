@@ -1,63 +1,57 @@
-# Контракт API — Part 1
+# API Part 2
 
-Базовый локальный URL: `http://127.0.0.1:8000/api/v1/`.
+База: `/api/v1/`. JSON, snake_case, завершающий `/`. Полная схема — `openapi.yaml`, Swagger — `/api/docs/`. Время ISO 8601 с timezone, идентификаторы UUID.
 
-| Метод | Путь от корня сервера | Доступ | Ответ |
-|---|---|---|---|
-| GET | `/api/v1/` | Публичный | service, version, api_version |
-| GET | `/api/v1/health/live/` | Публичный | 200 status=ok; без обращения к БД |
-| GET | `/api/v1/health/ready/` | Публичный | 200 status=ok либо 503 status=unavailable |
-| GET | `/api/v1/config/` | Публичный | Компания, языки, валюта, timezone, features |
-| GET | `/api/v1/accounts/me/` | Сессия | Только собственный профиль |
-| GET | `/api/schema/` | Local публичный; production staff | OpenAPI |
-| GET | `/api/docs/` | Local публичный; production staff | Swagger UI |
+| Метод и путь | Доступ | Назначение |
+|---|---|---|
+| GET / | Public | Название/версия API |
+| GET /health/live/ | Public | Процесс |
+| GET /health/ready/ | Public | Соединение с БД |
+| GET /config/ | Public | Контакты, языки, возможности |
+| POST /auth/request-code/ | Public | Запрос кода, 202 |
+| POST /auth/verify-code/ | Public | Проверка, вход/регистрация, 200 |
+| POST /auth/refresh/ | Refresh в JSON | Новая пара токенов |
+| POST /auth/logout/ | Bearer | Завершить текущую сессию, 204 |
+| POST /auth/logout-all/ | Bearer | Отозвать все JWT-сессии пользователя, 204 |
+| GET /auth/sessions/ | Bearer | Массив собственных активных сессий |
+| DELETE /auth/sessions/{id}/ | Bearer | Отозвать свою сессию; чужая 404 |
+| GET, PATCH /accounts/me/ | Bearer или Django session | Собственный профиль |
+| GET /legal/documents/?language=ru | Public | Три действующих документа выбранного языка |
+| GET /legal/consents/ | Auth | Своя история принятия |
+| POST /legal/consents/ | Auth | Принять конкретные версии + подтвердить 18+ |
 
-Readiness проверяет соединение с БД (`SELECT 1`), а не применение миграций. Применение миграций проверяют отдельным шагом до запуска сервера.
-
-```bash
-curl http://127.0.0.1:8000/api/v1/health/ready/
-curl http://127.0.0.1:8000/api/v1/config/
-```
-
-Конфигурация:
-
-```json
-{
-  "company": {
-    "name": "Оценка 360",
-    "legal_name": null,
-    "phone": "+77017700026",
-    "email": "sati-ocenka@mail.ru",
-    "address": "Казахстан, Астана, проспект Кабанбай батыр, 46а"
-  },
-  "default_language": "ru",
-  "supported_languages": ["ru", "kk", "en"],
-  "currency": "KZT",
-  "timezone": "Asia/Almaty",
-  "features": {"email_otp": false, "orders": false, "payments": false, "ai": false}
-}
-```
-
-Features описывают реализованные серверные функции, а не разрешения пользователя. Контроль доступа всегда выполняется сервером.
-
-`/accounts/me/`: id, email, first_name, last_name, phone_number, preferred_language, role, email_verified_at, date_joined. Пароль, permissions, staff/superuser-флаги не выдаются. Профиль только для чтения. Нет получения чужого профиля по ID, списка всех пользователей или публичного назначения ролей.
-
-Ошибки:
+## Пример последовательности
 
 ```json
-{"error":{"code":"not_authenticated","message":"Authentication credentials were not provided.","details":{}}}
+{"email":"client@example.com","language":"ru"}
 ```
 
-Клиенты должны ориентироваться на `error.code`, а тексты переводить у себя. Серверный message может меняться и локализоваться. Поля в details сохраняются при ошибках валидации. Стандартные коды: not_authenticated, permission_denied, validation_error, method_not_allowed, not_found, throttled, server_error. Health 503 специально использует status вместо общей оболочки ошибок.
+Отправить в `request-code`; сохранить `challenge_id` из ответа. Ответ также содержит `expires_in: 600`, `resend_after: 60`, нейтральное сообщение. Код и существование аккаунта не возвращаются.
 
-В Part 1 анонимный /me возвращает 403, а не 401, по правилам DRF SessionAuthentication. PATCH /me аутентифицированному пользователю — 405. Неожиданные ошибки не раскрывают внутренние exception messages. Django 404/500 оформлены JSON для `/api/` при DEBUG=False; локальный DEBUG может показывать диагностические страницы.
+```json
+{"challenge_id":"UUID_ИЗ_ОТВЕТА","code":"КОД_ИЗ_ПИСЬМА","device_name":"My phone"}
+```
 
-Все ответы `/api/` имеют Cache-Control: no-store и X-Request-ID. Лимиты DRF по умолчанию: 60/min для анонимных, 120/min для аутентифицированных; 429 включает Retry-After. Health endpoints исключены из этих лимитов. Это локальные ограничения на процесс, не DDoS-защита и не финальная защита авторизации.
+Отправить в `verify-code`. Ответ: `access`, `refresh`, `token_type`, `access_expires_in`, `session_expires_at`, `session_id`, `user`, `is_new_user`. При первом входе `user.requires_consent=true`.
 
-## Для Mobile Part 1
+Для защищённых запросов: `Authorization: Bearer ACCESS_TOKEN`. Получить документы на `user.preferred_language`, показать полные тексты, затем после явного согласия отправить в `/legal/consents/`:
 
-Физический телефон не видит Mac по 127.0.0.1. Когда понадобится тест с телефона в одной доверенной Wi-Fi сети, добавить LAN-IP Mac в DJANGO_ALLOWED_HOSTS и запустить `python manage.py runserver 0.0.0.0:8000`. Базой для телефона будет `http://LAN-IP:8000/api/v1/`. Настройки HTTP для development build согласуются в Mobile Part 1; production использует HTTPS. Не открывать dev-сервер в интернете.
+```json
+{"documents":["UUID_TERMS","UUID_PRIVACY","UUID_PERSONAL_DATA"],"adult_confirmed":true}
+```
 
-## Для Frontend
+Ответ — профиль с `requires_consent=false`. Повторное принятие тех же версий не создаёт дубликатов. Новая активная версия или смена языка может снова потребовать согласие. История старых версий остаётся.
 
-CORS разрешает только заданные origin. CORS_ALLOW_CREDENTIALS=False намеренно: междоменные cookie-сессии для Next.js ещё не реализованы. Доступ к публичной конфигурации возможен, а окончательная клиентская авторизация и CSRF-схема будут согласованы в Part 2. Не включать credentials или wildcard «чтобы заработало».
+PATCH `/accounts/me/` принимает только `first_name`, `last_name`, `phone_number` (E.164, например +77017700026), `preferred_language` (ru/kk/en). Email, role, staff и неизвестные поля отклоняются с 400. Телефон — контакт, `phone_verified=false`; SMS не отправляются.
+
+POST refresh: `{"refresh":"CURRENT_REFRESH_TOKEN"}` без Authorization. **Заменить оба токена** полученной парой. Старая refresh больше не действует. Последовательность обновления и обработки сетевых сбоев описана в AUTH.md.
+
+## Ошибки
+
+```json
+{"error":{"code":"invalid_code","message":"Code is invalid, expired or already used. Request a new code if needed.","details":{}}}
+```
+
+Основные статусы: 400 поля/код/устаревшие документы; 401 отсутствует или недействителен Bearer; 403 запрет доступа; 404 чужая/несуществующая сессия; 429 лимит (заголовок `Retry-After`); 503 SMTP либо документы не готовы. `legal_not_ready` требует подготовки документов; повторный запрос кода проблему не исправит. Сообщения ошибок технические английские; UI переводит `error.code` через i18n, не сравнивает полный текст.
+
+API помечен `Cache-Control: no-store`; запрос получает серверный `X-Request-ID`. CSRF сохраняется для Django-session запросов; Bearer не зависит от cookies. Anonymous `/accounts/me/` теперь 401 (в Part 1 был 403). Django session допускается для профиля/согласий; управление устройствами требует JWT.

@@ -21,7 +21,8 @@ def api_exception_handler(exc, context):
     if isinstance(exc, ValidationError):
         response.data = error_payload("validation_error", "Check the submitted fields.", response.data)
     else:
-        code = getattr(exc, "default_code", "request_error")
+        codes = exc.get_codes() if hasattr(exc, "get_codes") else None
+        code = codes if isinstance(codes, str) else getattr(exc, "default_code", "request_error")
         if isinstance(exc, NotAuthenticated):
             code = "not_authenticated"
         message = response.data.get("detail", "Request failed.")

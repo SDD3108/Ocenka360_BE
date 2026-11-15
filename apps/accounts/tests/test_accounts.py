@@ -91,9 +91,9 @@ class AccountAccessTests(TestCase):
 
     def test_me_denies_anonymous_without_leaking_profiles(self):
         response = self.api.get(reverse("accounts:me"))
-        self.assertEqual(response.status_code, 403)  # SessionAuthentication, no WWW-Authenticate.
+        self.assertEqual(response.status_code, 401)  # Bearer is the primary API authenticator.
         self.assertEqual(response.json()["error"]["code"], "not_authenticated")
-        self.assertNotContains(response, "client@example.com", status_code=403)
+        self.assertNotContains(response, "client@example.com", status_code=401)
 
     def test_me_returns_only_current_user_safe_fields(self):
         self.api.force_login(self.user)
@@ -109,7 +109,7 @@ class AccountAccessTests(TestCase):
     def test_me_cannot_change_role_or_profile(self):
         self.api.force_login(self.user)
         response = self.api.patch(reverse("accounts:me"), {"role": "admin", "is_superuser": True})
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 400)
         self.user.refresh_from_db()
         self.assertEqual(self.user.role, "client")
         self.assertFalse(self.user.is_superuser)
@@ -122,7 +122,7 @@ class AccountAccessTests(TestCase):
     def test_inactive_existing_session_loses_access(self):
         self.api.force_login(self.user)
         User.objects.filter(pk=self.user.pk).update(is_active=False)
-        self.assertEqual(self.api.get(reverse("accounts:me")).status_code, 403)
+        self.assertEqual(self.api.get(reverse("accounts:me")).status_code, 401)
 
     def test_role_permissions_reject_inactive_users(self):
         request = APIRequestFactory().get("/")

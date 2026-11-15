@@ -14,7 +14,15 @@ class UserAdmin(DjangoUserAdmin):
     list_filter = ("role", "is_active", "preferred_language")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("-date_joined",)
-    readonly_fields = ("id", "date_joined", "updated_at", "last_login", "email_verified_at")
+    readonly_fields = (
+        "id",
+        "date_joined",
+        "updated_at",
+        "last_login",
+        "email_verified_at",
+        "adult_confirmed_at",
+        "token_version",
+    )
     fieldsets = (
         (None, {"fields": ("id", "email", "password")}),
         ("Профиль", {"fields": ("first_name", "last_name", "phone_number", "preferred_language")}),
@@ -22,7 +30,19 @@ class UserAdmin(DjangoUserAdmin):
             "Доступ",
             {"fields": ("role", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
         ),
-        ("Служебные сведения", {"fields": ("email_verified_at", "date_joined", "updated_at", "last_login")}),
+        (
+            "Служебные сведения",
+            {
+                "fields": (
+                    "email_verified_at",
+                    "adult_confirmed_at",
+                    "token_version",
+                    "date_joined",
+                    "updated_at",
+                    "last_login",
+                )
+            },
+        ),
     )
     add_fieldsets = (
         (

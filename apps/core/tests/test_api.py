@@ -43,7 +43,8 @@ class SystemApiTests(TestCase):
         self.assertIsNone(data["company"]["legal_name"])
         self.assertEqual(data["supported_languages"], ["ru", "kk", "en"])
         self.assertEqual(data["currency"], "KZT")
-        self.assertFalse(any(data["features"].values()))
+        self.assertTrue(data["features"]["email_otp"])
+        self.assertFalse(any(v for k, v in data["features"].items() if k != "email_otp"))
         for forbidden in ("SECRET_KEY", "DATABASE_URL", "EMAIL_HOST_PASSWORD"):
             self.assertNotContains(response, forbidden)
 
@@ -97,7 +98,7 @@ class SystemApiTests(TestCase):
 
     def test_schema_and_docs_require_staff_outside_local_settings(self):
         for name in ("schema", "swagger-ui"):
-            self.assertEqual(self.client.get(reverse(name)).status_code, 403)
+            self.assertEqual(self.client.get(reverse(name)).status_code, 401)
         user = User.objects.create_user("client@example.com")
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse("schema")).status_code, 403)
@@ -106,4 +107,4 @@ class SystemApiTests(TestCase):
         response = self.client.get(reverse("schema"), HTTP_ACCEPT="application/vnd.oai.openapi+json")
         self.assertEqual(response.status_code, 200)
         self.assertIn("/api/v1/accounts/me/", response.json()["paths"])
-        self.assertNotIn("/api/v1/auth/request-code/", response.json()["paths"])
+        self.assertIn("/api/v1/auth/request-code/", response.json()["paths"])

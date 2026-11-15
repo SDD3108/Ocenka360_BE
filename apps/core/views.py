@@ -57,6 +57,6 @@ class PublicConfigView(PublicView):
                 "supported_languages": ["ru", "kk", "en"],
                 "currency": "KZT",
                 "timezone": settings.TIME_ZONE,
-                "features": {"email_otp": False, "orders": False, "payments": False, "ai": False},
+                "features": {"email_otp": True, "orders": False, "payments": False, "ai": False},
             }
         )
