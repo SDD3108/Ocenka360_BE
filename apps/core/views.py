@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.assistance.policy import enabled as ai_enabled
 from apps.payments.providers import available_methods
 
 from .serializers import ApiRootSerializer, HealthSerializer, PublicConfigSerializer
@@ -75,7 +76,7 @@ class PublicConfigView(PublicView):
                     ),
                     "reports": True,
                     "reviewer_operations": True,
-                    "ai": False,
+                    "ai": ai_enabled(),
                 },
             }
         )

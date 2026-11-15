@@ -5,6 +5,8 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.core.views import ApiRootView
 
 urlpatterns = [
+    path("api/v1/", include("apps.assistance.urls")),
+    path("api/v1/", include("apps.comparables.urls")),
     path("api/v1/", include("apps.reports.urls")),
     path("api/v1/", include("apps.operations.urls")),
     path("api/v1/", include("apps.communications.urls")),
