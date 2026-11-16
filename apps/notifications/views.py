@@ -28,7 +28,7 @@ class NotificationsView(ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        data = validated(NotificationQuery, self.request.query_params)
+        data = validated(NotificationQuery, self.request.query_params.dict())
         query = services.visible(self.request.user)
         if "unread" in data:
             query = query.filter(read_at__isnull=data["unread"])
